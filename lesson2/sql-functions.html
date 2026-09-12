@@ -46,10 +46,6 @@
 
     <div class="flex flex-1 overflow-hidden min-h-0">
         <aside class="w-64 shrink-0 border-r border-slate-200 bg-white flex flex-col">
-            <nav class="p-3 space-y-1 border-b border-slate-200">
-                <button type="button" id="nav-lab" onclick="switchView('lab')" class="w-full text-left block px-3 py-2 rounded-xl text-sm font-semibold border border-indigo-200 bg-indigo-50 text-indigo-700">Exercises</button>
-                <button type="button" id="nav-summary" onclick="switchView('summary')" class="w-full text-left block px-3 py-2 rounded-xl text-sm font-semibold border border-transparent text-slate-600 hover:bg-slate-50">Overview</button>
-            </nav>
             <div id="task-list" class="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar"></div>
         </aside>
 
@@ -123,38 +119,6 @@
 
             </div>
         </main>
-    </div>
-
-    <div id="view-summary" class="hidden flex-1 overflow-auto p-8 bg-slate-50 custom-scrollbar">
-        <div class="max-w-4xl mx-auto">
-            <div class="mb-8 flex items-end justify-between">
-                <div>
-                    <h2 class="text-2xl font-semibold text-slate-700">Overview</h2>
-                    <p class="text-slate-500 mt-1 font-medium">Completed tasks are tracked locally in your browser.</p>
-                </div>
-                <div id="overall-score" class="text-3xl font-semibold text-slate-600">0/21</div>
-            </div>
-            <div class="grid grid-cols-3 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
-                    <div class="text-slate-400 text-xs font-bold mb-1">Completed</div>
-                    <div id="stat-completed" class="text-3xl font-semibold text-emerald-700">0</div>
-                </div>
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
-                    <div class="text-slate-400 text-xs font-bold mb-1">Incorrect</div>
-                    <div id="stat-incorrect" class="text-3xl font-semibold text-rose-600">0</div>
-                </div>
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
-                    <div class="text-slate-400 text-xs font-bold mb-1">Remaining</div>
-                    <div id="stat-remaining" class="text-3xl font-bold text-slate-400">21</div>
-                </div>
-            </div>
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <table class="w-full">
-                    <thead><tr class="border-b border-slate-100"><th class="p-4 text-xs">ID</th><th class="p-4 text-xs text-left">Exercise Title</th><th class="p-4 text-xs text-center">Status</th></tr></thead>
-                    <tbody id="summary-table-body"></tbody>
-                </table>
-            </div>
-        </div>
     </div>
         </div>
     </div>
@@ -239,21 +203,6 @@
             loadTask(0);
         }
 
-        function sidebarNavClass(on) {
-            return on
-                ? 'w-full text-left block px-3 py-2 rounded-xl text-sm font-semibold border border-indigo-200 bg-indigo-50 text-indigo-700'
-                : 'w-full text-left block px-3 py-2 rounded-xl text-sm font-semibold border border-transparent text-slate-600 hover:bg-slate-50';
-        }
-
-        function switchView(view) {
-            const isLab = view === 'lab';
-            document.getElementById('view-lab').classList.toggle('hidden', !isLab);
-            document.getElementById('view-summary').classList.toggle('hidden', isLab);
-            document.getElementById('nav-lab').className = sidebarNavClass(isLab);
-            document.getElementById('nav-summary').className = sidebarNavClass(!isLab);
-            if (!isLab) renderSummary();
-        }
-
         function renderTaskSidebar() {
             const list = document.getElementById('task-list');
             let currentGroup = "";
@@ -276,7 +225,6 @@
         }
 
         function loadTask(idx) {
-            switchView('lab');
             activeTaskIdx = idx;
             const t = tasks[idx];
             document.getElementById('current-task-title').innerText = `${t.group} · ${t.id} ${t.title}`;
@@ -356,30 +304,6 @@
             badge.className = `status-badge ${task.status === 'completed' ? 'status-completed' : (task.status === 'incorrect' ? 'status-incorrect' : 'status-not-attempted')}`;
             badge.innerText = task.status.replace('_', ' ');
             renderTaskSidebar();
-        }
-
-        function renderSummary() {
-            const body = document.getElementById('summary-table-body');
-            const completed = tasks.filter(t => t.status === 'completed').length;
-            const incorrect = tasks.filter(t => t.status === 'incorrect').length;
-            const remaining = tasks.filter(t => t.status === 'not_attempted').length;
-            
-            document.getElementById('overall-score').innerText = `${completed}/${tasks.length}`;
-            document.getElementById('stat-completed').innerText = completed;
-            document.getElementById('stat-incorrect').innerText = incorrect;
-            document.getElementById('stat-remaining').innerText = remaining;
-            
-            body.innerHTML = tasks.map(t => {
-                return `
-                <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                    <td class="p-4 text-center font-semibold text-slate-400 text-sm align-top">${t.id}</td>
-                    <td class="p-4 align-top">
-                        <div class="font-semibold text-slate-700 text-sm">${t.title}</div>
-                        <div class="text-sm text-slate-500">${t.desc}</div>
-                    </td>
-                    <td class="p-4 text-center align-top"><span class="status-badge ${t.status === 'completed' ? 'status-completed' : (t.status === 'incorrect' ? 'status-incorrect' : 'status-not-attempted')}">${t.status.replace('_',' ')}</span></td>
-                </tr>`;
-            }).join('');
         }
 
         function generateTableHTML(columns, values) {

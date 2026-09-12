@@ -1,7 +1,7 @@
 /**
- * Shared Lesson 2 chrome: top task nav + optional left level sidebar.
+ * Shared Lesson 2 chrome: top task nav + left level sidebar with complete status.
  * Set body[data-task] to overview | schema | link | sql
- * Set body[data-level] for schema/link pages: overview | 1 | 2 | 3 | 4
+ * Set body[data-level] for schema/link pages: 1 | 2 | 3 | 4
  */
 (function () {
     const task = document.body.getAttribute('data-task') || 'overview';
@@ -15,8 +15,31 @@
 
     function sideClass(on) {
         return on
-            ? 'block px-3 py-2 rounded-xl text-sm font-semibold border border-indigo-200 bg-indigo-50 text-indigo-700'
-            : 'block px-3 py-2 rounded-xl text-sm font-semibold border border-transparent text-slate-600 hover:bg-slate-50';
+            ? 'flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-sm font-semibold border border-indigo-200 bg-indigo-50 text-indigo-700'
+            : 'flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-sm font-semibold border border-transparent text-slate-600 hover:bg-slate-50';
+    }
+
+    function seriesStatus(key, id) {
+        try {
+            const store = JSON.parse(localStorage.getItem(key) || '{}');
+            return ((store.levels || {})[String(id)] || {}).status || 'not_started';
+        } catch (err) {
+            return 'not_started';
+        }
+    }
+
+    function statusMark(status) {
+        if (status === 'completed') {
+            return '<i class="fa-solid fa-circle-check text-emerald-600" title="Completed"></i>';
+        }
+        if (status === 'in_progress') {
+            return '<i class="fa-solid fa-circle-dot text-amber-500" title="In progress"></i>';
+        }
+        return '<i class="fa-regular fa-circle text-slate-300" title="Not started"></i>';
+    }
+
+    function sideLink(href, on, label, status) {
+        return `<a href="${href}" class="${sideClass(on)}"><span>${label}</span>${statusMark(status)}</a>`;
     }
 
     const header = document.getElementById('lesson-header');
@@ -34,38 +57,41 @@
                     </div>
                 </div>
                 <nav class="ml-auto flex flex-wrap items-center gap-1.5 text-sm font-semibold">
-                    <a href="overview.html" class="${topClass(task === 'overview')}">Overview</a>
-                    <a href="column-overview.html" class="${topClass(task === 'schema')}">Task 1: Schema</a>
-                    <a href="link-overview.html" class="${topClass(task === 'link')}">Task 2: Relationships</a>
+                    <a href="index.html" class="${topClass(task === 'overview')}">Overview</a>
+                    <a href="column-easy.html" class="${topClass(task === 'schema')}">Task 1: Schema</a>
+                    <a href="link-1.html" class="${topClass(task === 'link')}">Task 2: Relationships</a>
                     <a href="sql-functions.html" class="${topClass(task === 'sql')}">Task 3: SQL</a>
                 </nav>
             </div>`;
     }
 
-    const sidebar = document.getElementById('lesson-sidebar');
-    if (!sidebar) return;
+    function renderSidebar() {
+        const sidebar = document.getElementById('lesson-sidebar');
+        if (!sidebar) return;
 
-    sidebar.className = 'w-64 shrink-0 border-r border-slate-200 bg-white overflow-y-auto';
+        sidebar.className = 'w-64 shrink-0 border-r border-slate-200 bg-white overflow-y-auto';
 
-    if (task === 'schema') {
-        sidebar.innerHTML = `
-            <nav class="p-3 space-y-1">
-                <a href="column-overview.html" class="${sideClass(level === 'overview')}">Task overview</a>
-                <a href="column-easy.html" class="${sideClass(level === '1')}">Level 1 · Library</a>
-                <a href="column.html" class="${sideClass(level === '2')}">Level 2 · Instagram</a>
-                <a href="column-hard.html" class="${sideClass(level === '3')}">Level 3 · School</a>
-            </nav>`;
-        return;
+        if (task === 'schema') {
+            sidebar.innerHTML = `
+                <nav class="p-3 space-y-1">
+                    ${sideLink('column-easy.html', level === '1', 'Level 1 · Library', seriesStatus('column-architect-progress-v1', 1))}
+                    ${sideLink('column.html', level === '2', 'Level 2 · Instagram', seriesStatus('column-architect-progress-v1', 2))}
+                    ${sideLink('column-hard.html', level === '3', 'Level 3 · School', seriesStatus('column-architect-progress-v1', 3))}
+                </nav>`;
+            return;
+        }
+
+        if (task === 'link') {
+            sidebar.innerHTML = `
+                <nav class="p-3 space-y-1">
+                    ${sideLink('link-1.html', level === '1', 'Level 1 · Form class', seriesStatus('link-architect-progress-v3', 1))}
+                    ${sideLink('link-2.html', level === '2', 'Level 2 · Student cards', seriesStatus('link-architect-progress-v3', 2))}
+                    ${sideLink('link-3.html', level === '3', 'Level 3 · School clubs', seriesStatus('link-architect-progress-v3', 3))}
+                    ${sideLink('link-4.html', level === '4', 'Level 4 · Cinema', seriesStatus('link-architect-progress-v3', 4))}
+                </nav>`;
+        }
     }
 
-    if (task === 'link') {
-        sidebar.innerHTML = `
-            <nav class="p-3 space-y-1">
-                <a href="link-overview.html" class="${sideClass(level === 'overview')}">Task overview</a>
-                <a href="link-1.html" class="${sideClass(level === '1')}">Level 1 · Form class</a>
-                <a href="link-2.html" class="${sideClass(level === '2')}">Level 2 · Student cards</a>
-                <a href="link-3.html" class="${sideClass(level === '3')}">Level 3 · School clubs</a>
-                <a href="link-4.html" class="${sideClass(level === '4')}">Level 4 · Cinema</a>
-            </nav>`;
-    }
+    window.renderLessonSidebar = renderSidebar;
+    renderSidebar();
 })();

@@ -288,8 +288,9 @@
         if (errors.length === 0 && totalPlaced === TASK.attributes.length) {
             persistProgress({ completed: true });
             const isLast = !window.ColumnProgress || levelId >= window.ColumnProgress.LEVELS.length;
-            const nextHref = isLast ? 'column-overview.html' : window.ColumnProgress.LEVELS[levelId].href;
-            const nextLabel = isLast ? 'View overview' : `Go to level ${levelId + 1}`;
+            const nextHref = isLast ? 'index.html' : window.ColumnProgress.LEVELS[levelId].href;
+            const nextLabel = isLast ? 'Back to lesson' : `Go to level ${levelId + 1}`;
+            if (window.renderLessonSidebar) window.renderLessonSidebar();
             reportEl.className = 'rounded-2xl p-6 bg-emerald-50/90 border border-emerald-300/80 text-emerald-950 shadow-sm space-y-3';
             reportEl.innerHTML = `
                 <div class="flex items-center gap-3.5">
