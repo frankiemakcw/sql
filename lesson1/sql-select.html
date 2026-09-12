@@ -54,12 +54,12 @@
         <main class="flex-1 flex flex-col bg-white overflow-hidden">
             <!-- Top: Editor & Info -->
             <div class="p-4 bg-slate-50 border-b border-slate-200 shadow-inner">
-                <div class="flex justify-between items-start mb-3">
-                    <div class="max-w-2xl">
+                <div class="mb-3">
+                    <div class="flex justify-between items-start gap-3">
                         <h2 id="current-task-title" class="text-base font-semibold text-slate-700">Select a task</h2>
-                        <p id="current-task-desc" class="text-sm text-slate-600 mt-1">Choose a task from the sidebar to begin your exercise.</p>
+                        <div id="task-badge" class="hidden status-badge status-not-attempted shrink-0">Not Attempted</div>
                     </div>
-                    <div id="task-badge" class="hidden status-badge status-not-attempted">Not Attempted</div>
+                    <p id="current-task-desc" class="text-xs text-slate-600 mt-1 whitespace-nowrap">Choose a task from the sidebar to begin your exercise.</p>
                 </div>
                 
                 <div class="relative group">
