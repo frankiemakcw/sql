@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 1 — Overview</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body data-task="overview" class="bg-slate-100/70 text-slate-800 min-h-screen font-sans antialiased flex flex-col selection:bg-indigo-100 selection:text-indigo-900">
+
+    <header id="lesson-header"></header>
+    <script src="lesson1-shell.js"></script>
+
+    <main class="flex-1 w-full p-5 space-y-5">
+        <div class="max-w-6xl mx-auto space-y-5">
+        <section class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-sm">
+            <h2 class="text-lg font-bold text-slate-800">Your Progress</h2>
+            <p id="progress-copy" class="text-sm text-slate-500 mt-1">Complete every task in this lesson.</p>
+            <div class="flex items-center justify-between text-xs font-bold text-slate-600 mt-4 mb-2">
+                <span>Parts completed</span>
+                <span id="progress-count">0 / 3</span>
+            </div>
+            <div class="h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                <div id="progress-bar" class="h-full bg-emerald-600 rounded-full transition-all" style="width: 0%"></div>
+            </div>
+        </section>
+
+        <section id="task-grid" class="grid md:grid-cols-3 gap-5"></section>
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-slate-200/80 text-center py-4 text-xs sm:text-sm text-slate-500 font-medium">
+        Lesson 1 · All tasks
+    </footer>
+
+    <script>
+        function statusMeta(status) {
+            if (status === 'completed') {
+                return { label: 'Completed', icon: 'fa-trophy', chip: 'bg-emerald-50 border-emerald-200 text-emerald-800', card: 'border-emerald-200' };
+            }
+            if (status === 'in_progress') {
+                return { label: 'In progress', icon: 'fa-spinner', chip: 'bg-amber-50 border-amber-200 text-amber-800', card: 'border-amber-200' };
+            }
+            return { label: 'Not started', icon: 'fa-circle', chip: 'bg-slate-100 border-slate-200 text-slate-600', card: 'border-slate-200' };
+        }
+
+        function datatypeProgress() {
+            try {
+                const parsed = JSON.parse(localStorage.getItem('column-datatype-progress-v2') || '{}');
+                if (parsed.completed) return { done: 1, total: 1, status: 'completed', detail: '1 / 1 quiz complete' };
+                const answers = parsed.answers && typeof parsed.answers === 'object' ? parsed.answers : {};
+                const started = Object.values(answers).some(Boolean);
+                return { done: 0, total: 1, status: started ? 'in_progress' : 'not_started', detail: started ? 'Quiz in progress' : '1 quiz' };
+            } catch (err) {
+                return { done: 0, total: 1, status: 'not_started', detail: '1 quiz' };
+            }
+        }
+
+        function seriesProgress(key, total, unit) {
+            try {
+                const store = JSON.parse(localStorage.getItem(key) || '{}');
+                const levels = store.levels || {};
+                let done = 0;
+                let started = 0;
+                for (let i = 1; i <= total; i++) {
+                    const status = (levels[String(i)] || {}).status;
+                    if (status === 'completed') done += 1;
+                    if (status === 'in_progress' || status === 'completed') started += 1;
+                }
+                const status = done === total ? 'completed' : (started ? 'in_progress' : 'not_started');
+                return { done: done, total: total, status: status, detail: `${done} / ${total} ${unit}` };
+            } catch (err) {
+                return { done: 0, total: total, status: 'not_started', detail: `0 / ${total} ${unit}` };
+            }
+        }
+
+        function sqlProgress(key, total) {
+            try {
+                const rows = JSON.parse(localStorage.getItem(key) || '[]');
+                const done = rows.filter((row) => row.status === 'completed').length;
+                const started = rows.filter((row) => row.status && row.status !== 'not_attempted').length;
+                const status = done >= total ? 'completed' : (started ? 'in_progress' : 'not_started');
+                return { done: Math.min(done, total), total: total, status: status, detail: `${Math.min(done, total)} / ${total} queries` };
+            } catch (err) {
+                return { done: 0, total: total, status: 'not_started', detail: `0 / ${total} queries` };
+            }
+        }
+
+        const TASKS = [
+            {
+                title: 'Task 1: Data types',
+                blurb: 'Choose int, varchar, decimal, or date for each column.',
+                href: 'datatype.html',
+                icon: 'fa-list-check',
+                progress: datatypeProgress()
+            },
+            {
+                title: 'Task 2: Primary key',
+                blurb: 'Build one table, mark the primary key, and leave unused extras in the pool.',
+                href: 'table-overview.html',
+                icon: 'fa-key',
+                progress: seriesProgress('pk-architect-progress-v1', 3, 'levels')
+            },
+            {
+                title: 'Task 3: SQL',
+                blurb: 'Write SELECT queries for the books and cakes tables.',
+                href: 'sql-select.html',
+                icon: 'fa-code',
+                progress: sqlProgress('sql_select_progress', 14)
+            }
+        ];
+
+        function render() {
+            const finished = TASKS.filter((task) => task.progress.status === 'completed').length;
+            document.getElementById('progress-count').textContent = `${finished} / ${TASKS.length}`;
+            document.getElementById('progress-bar').style.width = `${(finished / TASKS.length) * 100}%`;
+            document.getElementById('progress-copy').textContent = finished === TASKS.length
+                ? 'All Lesson 1 tasks are complete. Great work!'
+                : `${finished} of ${TASKS.length} tasks completed. Progress is saved in this browser.`;
+
+            document.getElementById('task-grid').innerHTML = TASKS.map((task) => {
+                const meta = statusMeta(task.progress.status);
+                const action = task.progress.status === 'completed' ? 'Review' : (task.progress.status === 'in_progress' ? 'Continue' : 'Start');
+                return `
+                    <article class="bg-white border ${meta.card} rounded-2xl p-5 shadow-sm flex flex-col gap-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-11 h-11 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center text-lg">
+                                    <i class="fa-solid ${task.icon}"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-slate-800">${task.title}</h3>
+                                    <p class="text-xs text-slate-500 mt-0.5">${task.progress.detail}</p>
+                                </div>
+                            </div>
+                            <span class="shrink-0 text-xs font-bold px-2.5 py-1 rounded-lg border ${meta.chip}">
+                                <i class="fa-solid ${meta.icon} mr-1"></i>${meta.label}
+                            </span>
+                        </div>
+                        <p class="text-sm text-slate-600 leading-relaxed">${task.blurb}</p>
+                        <a href="${task.href}" class="mt-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-xs font-bold transition">
+                            ${action} <i class="fa-solid fa-arrow-right text-xs"></i>
+                        </a>
+                    </article>`;
+            }).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', render);
+    </script>
+</body>
+</html>

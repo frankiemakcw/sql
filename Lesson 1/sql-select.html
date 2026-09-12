@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Select Practice</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
+        
+        body { background-color: #f8fafc; color: #1e293b; }
+        .sql-workspace { font-family: 'Inter', sans-serif; }
+        .code-font { font-family: 'Fira Code', 'Consolas', monospace; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        .table-container { border: 1px solid #e2e8f0; border-radius: 8px; overflow: auto; background: white; height: 100%; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+        th { background-color: #f8fafc; color: #64748b; font-weight: 700; text-align: left; padding: 4px 8px; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 5; font-size: 0.6rem; }
+        td { padding: 4px 8px; border-bottom: 1px solid #f1f5f9; color: #334155; white-space: nowrap; }
+        
+        .task-card { cursor: pointer; transition: all 0.2s; border-left: 4px solid transparent; }
+        .task-card.active { background-color: #eef2ff; border-left-color: #6366f1; }
+        
+        .status-badge { padding: 2px 8px; border-radius: 99px; font-size: 0.7rem; font-weight: 700; }
+        .status-not-attempted { background-color: #f1f5f9; color: #64748b; }
+        .status-completed { background-color: #dcfce7; color: #166534; }
+        .status-incorrect { background-color: #fee2e2; color: #991b1b; }
+
+        .panel-label { font-size: 11px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
+        
+        /* Ensure textarea behavior is strictly plain text */
+        #editor {
+            white-space: pre;
+            overflow-wrap: normal;
+            overflow-x: auto;
+            resize: none;
+            font-variant-ligatures: none;
+        }
+    </style>
+</head>
+<body data-task="sql" class="h-screen flex flex-col overflow-hidden bg-slate-100/70 text-slate-800 font-sans antialiased">
+    <header id="lesson-header"></header>
+    <script src="lesson1-shell.js"></script>
+
+    <div class="flex flex-1 overflow-hidden min-h-0">
+        <aside class="w-64 shrink-0 border-r border-slate-200 bg-white flex flex-col">
+            <nav class="p-3 space-y-1 border-b border-slate-200">
+                <button type="button" id="nav-lab" onclick="switchView('lab')" class="w-full text-left block px-3 py-2 rounded-xl text-sm font-bold border border-indigo-200 bg-indigo-50 text-indigo-800">Exercises</button>
+                <button type="button" id="nav-summary" onclick="switchView('summary')" class="w-full text-left block px-3 py-2 rounded-xl text-sm font-bold border border-transparent text-slate-600 hover:bg-slate-50">Summary</button>
+            </nav>
+            <div id="task-list" class="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar"></div>
+        </aside>
+
+        <div class="sql-workspace flex-1 flex flex-col min-w-0 overflow-hidden">
+    <div id="view-lab" class="flex flex-1 overflow-hidden min-h-0">
+        <main class="flex-1 flex flex-col bg-white overflow-hidden">
+            <!-- Top: Editor & Info -->
+            <div class="p-4 bg-slate-50 border-b border-slate-200 shadow-inner">
+                <div class="flex justify-between items-start mb-3">
+                    <div class="max-w-2xl">
+                        <h2 id="current-task-title" class="text-base font-bold text-slate-800">Select a task</h2>
+                        <p id="current-task-desc" class="text-xs text-slate-600 mt-1 italic">Choose a task from the sidebar to begin your exercise.</p>
+                    </div>
+                    <div id="task-badge" class="hidden status-badge status-not-attempted">Not Attempted</div>
+                </div>
+                
+                <div class="relative group">
+                    <!-- Added autocomplete="off" and autocapitalize="off" to prevent mobile/OS interference -->
+                    <textarea 
+                        id="editor" 
+                        spellcheck="false" 
+                        autocomplete="off"
+                        autocorrect="off"
+                        autocapitalize="off"
+                        oninput="saveCurrentQuery()" 
+                        class="w-full h-28 p-4 rounded-xl border-2 border-slate-200 code-font text-sm shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all outline-none" 
+                        placeholder="SELECT * FROM table..."></textarea>
+                    
+                    <button onclick="checkTask()" class="absolute bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-lg hover:shadow-blue-200 transition-all transform active:scale-95 flex items-center gap-2 text-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        Execute Query
+                    </button>
+                </div>
+                <div id="feedback" class="mt-3 hidden p-3 rounded-lg text-xs font-semibold flex items-center gap-3"></div>
+            </div>
+
+            <!-- Bottom: Three Column Tables -->
+            <div class="flex-1 grid grid-cols-3 gap-3 p-3 bg-white overflow-hidden">
+                
+                <!-- Col 1: Source Reference -->
+                <div id="reference-section" class="flex flex-col min-w-0">
+                    <div class="panel-label text-indigo-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                        Source: <span id="ref-table-name" class="font-black">...</span>
+                    </div>
+                    <div id="source-table" class="table-container border-blue-100 custom-scrollbar bg-blue-50/10"></div>
+                </div>
+
+                <!-- Col 2: Expected Output -->
+                <div class="flex flex-col min-w-0">
+                    <div class="panel-label text-emerald-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        Expected result
+                    </div>
+                    <div id="expected-result" class="table-container border-emerald-100 custom-scrollbar bg-emerald-50/10"></div>
+                </div>
+
+                <!-- Col 3: Actual Output -->
+                <div class="flex flex-col min-w-0">
+                    <div class="panel-label text-slate-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                        Your result
+                    </div>
+                    <div id="query-result" class="table-container border-slate-200 custom-scrollbar">
+                        <div class="h-full flex items-center justify-center text-slate-300 text-[10px] italic p-4 text-center">
+                            Run your query to see results here.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <div id="view-summary" class="hidden flex-1 overflow-auto p-8 bg-slate-50 custom-scrollbar">
+        <div class="max-w-4xl mx-auto">
+            <div class="mb-8 flex items-end justify-between">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-900">Learning Progress</h2>
+                    <p class="text-slate-500 mt-1 font-medium">Completed tasks are tracked locally in your browser.</p>
+                </div>
+                <div id="overall-score" class="text-4xl font-black text-blue-600">0/14</div>
+            </div>
+            <div class="grid grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
+                    <div class="text-slate-400 text-xs font-bold mb-1">Completed</div>
+                    <div id="stat-completed" class="text-3xl font-bold text-green-600">0</div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
+                    <div class="text-slate-400 text-xs font-bold mb-1">Incorrect</div>
+                    <div id="stat-incorrect" class="text-3xl font-bold text-red-500">0</div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
+                    <div class="text-slate-400 text-xs font-bold mb-1">Remaining</div>
+                    <div id="stat-remaining" class="text-3xl font-bold text-slate-400">14</div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <table class="w-full">
+                    <thead><tr class="border-b border-slate-100"><th class="p-4 text-xs">ID</th><th class="p-4 text-xs text-left">Exercise Title</th><th class="p-4 text-xs text-center">Status</th></tr></thead>
+                    <tbody id="summary-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+        </div>
+    </div>
+
+    <script>
+        let db;
+        let activeTaskIdx = 0;
+        const tasks = [
+            { id: "1.1", group: "Level 1 · Books", table: "books", title: "All Columns", desc: "Display all columns and all rows from the books table.", sql: "SELECT * FROM books;", status: 'not_attempted' },
+            { id: "1.2", group: "Level 1 · Books", table: "books", title: "Specific Columns", desc: "Display only the title and the price of every book.", sql: "SELECT title, price FROM books;", status: 'not_attempted' },
+            { id: "1.3", group: "Level 1 · Books", table: "books", title: "Filtering by Author", desc: "Display the title of each book written by 'Sunny Chan'.", sql: "SELECT title FROM books WHERE author = 'Sunny Chan';", status: 'not_attempted' },
+            { id: "1.4", group: "Level 1 · Books", table: "books", title: "Exact Match", desc: "Display all the details of the book titled 'Magic Rainbow'.", sql: "SELECT * FROM books WHERE title = 'Magic Rainbow';", status: 'not_attempted' },
+            { id: "1.5", group: "Level 1 · Books", table: "books", title: "Price Comparison", desc: "Display the title and the price of each book which has a price less than 35.", sql: "SELECT title, price FROM books WHERE price < 35;", status: 'not_attempted' },
+            { id: "1.6", group: "Level 1 · Books", table: "books", title: "Negative Filter", desc: "Display the title and the author of each book which is NOT written by 'Chris Ho'.", sql: "SELECT title, author FROM books WHERE author != 'Chris Ho';", status: 'not_attempted' },
+            { id: "1.7", group: "Level 1 · Books", table: "books", title: "Unique Values", desc: "Display all authors in the table (no name should appear twice).", sql: "SELECT DISTINCT author FROM books;", status: 'not_attempted' },
+            { id: "2.1", group: "Level 2 · Cakes", table: "cakes", title: "Weight Filter", desc: "Display the name and the weight of each cake which has a weight greater than 600 g.", sql: "SELECT name, weight FROM cakes WHERE weight > 600;", status: 'not_attempted' },
+            { id: "2.2", group: "Level 2 · Cakes", table: "cakes", title: "Multiple Filters", desc: "Display the details of each cake which has a weight greater than 600 g AND a price lower than $300.", sql: "SELECT * FROM cakes WHERE weight > 600 AND price < 300;", status: 'not_attempted' },
+            { id: "2.3", group: "Level 2 · Cakes", table: "cakes", title: "OR Filter", desc: "Display the name and the price of each cake which is named 'Tiramisu' OR has a price at most $120.", sql: "SELECT name, price FROM cakes WHERE name = 'Tiramisu' OR price <= 120;", status: 'not_attempted' },
+            { id: "2.4", group: "Level 2 · Cakes", table: "cakes", title: "Sort Price ASC", desc: "Display the name and the price of all cakes. Sorted the cakes by price in ascending order (the cheapest cake at the top).", sql: "SELECT name, price FROM cakes ORDER BY price ASC;", status: 'not_attempted' },
+            { id: "2.5", group: "Level 2 · Cakes", table: "cakes", title: "Sort Weight DESC", desc: "Display the name and the weight of all cakes. Sort the cakes by weight in descending order (the heaviest cake at the top).", sql: "SELECT name, weight FROM cakes ORDER BY weight DESC;", status: 'not_attempted' },
+            { id: "2.6", group: "Level 2 · Cakes", table: "cakes", title: "Multiple Sort", desc: "Display the details of all cakes. Sort the cakes by weight in descending order, and then by price in ascending order.", sql: "SELECT * FROM cakes ORDER BY weight DESC, price ASC;", status: 'not_attempted' },
+            { id: "2.7", group: "Level 2 · Cakes", table: "cakes", title: "Where & Sort", desc: "Display the details of each cake which has a price greater than $200 and smaller than $300. Sort the cakes by weight in ascending order.", sql: "SELECT * FROM cakes WHERE price > 200 AND price < 300 ORDER BY weight ASC;", status: 'not_attempted' }
+        ];
+
+        // --- Persistence Logic ---
+
+        function saveCurrentQuery() {
+            const task = tasks[activeTaskIdx];
+            // Access raw plain text value directly
+            const query = document.getElementById('editor').value;
+            localStorage.setItem(`sql_select_query_${task.id}`, query);
+        }
+
+        function loadSavedQuery(taskId) {
+            return localStorage.getItem(`sql_select_query_${taskId}`) || "";
+        }
+
+        function saveProgress() {
+            const progress = tasks.map(t => ({ id: t.id, status: t.status }));
+            localStorage.setItem('sql_select_progress', JSON.stringify(progress));
+        }
+
+        function loadProgress() {
+            const saved = localStorage.getItem('sql_select_progress');
+            if (saved) {
+                const progressData = JSON.parse(saved);
+                progressData.forEach(p => {
+                    const task = tasks.find(t => t.id === p.id);
+                    if (task) task.status = p.status;
+                });
+            }
+        }
+
+        // --- Application Logic ---
+
+        async function init() {
+            const SQL = await initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${f}` });
+            db = new SQL.Database();
+            db.run(`
+                CREATE TABLE books ( id INTEGER PRIMARY KEY, title TEXT, author TEXT, price INTEGER );
+                INSERT INTO books VALUES 
+                (1, 'The Happy Little Tree', 'Sunny Chan', 45), (2, 'Sharing is Caring', 'Mary Lee', 38),
+                (3, 'The Brave Little Puppy', 'Sunny Chan', 50), (4, 'Magic Rainbow', 'Chris Ho', 48),
+                (5, 'Helping Hands at School', 'Chris Ho', 35), (6, 'Kindness is a Superpower', 'Chris Ho', 40),
+                (7, 'Dancing Stars at Night', 'Mary Lee', 48), (8, 'Thank You, Teachers', 'Sunny Chan', 30);
+                
+                CREATE TABLE cakes ( id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, weight INTEGER, price INTEGER );
+                INSERT INTO cakes (name, weight, price) VALUES 
+                ('Cheese Cake', 500, 180), ('Strawberry Cake', 600, 220), ('Blueberry Cheese Cake', 450, 150), 
+                ('Mango Cake', 400, 120), ('Matcha Cake', 750, 250), ('Mango Crispy', 800, 280), 
+                ('Tiramisu', 550, 260), ('Coffee Cake', 300, 95), ('Chocolate Cake', 500, 140), 
+                ('Durian Cake', 900, 380), ('Blueberry Cake', 350, 110), ('Black Forest', 400, 130);
+            `);
+            loadProgress();
+            renderTaskSidebar();
+            loadTask(0);
+        }
+
+        function sidebarNavClass(on) {
+            return on
+                ? 'w-full text-left block px-3 py-2 rounded-xl text-sm font-bold border border-indigo-200 bg-indigo-50 text-indigo-800'
+                : 'w-full text-left block px-3 py-2 rounded-xl text-sm font-bold border border-transparent text-slate-600 hover:bg-slate-50';
+        }
+
+        function switchView(view) {
+            const isLab = view === 'lab';
+            document.getElementById('view-lab').classList.toggle('hidden', !isLab);
+            document.getElementById('view-summary').classList.toggle('hidden', isLab);
+            document.getElementById('nav-lab').className = sidebarNavClass(isLab);
+            document.getElementById('nav-summary').className = sidebarNavClass(!isLab);
+            if (!isLab) renderSummary();
+        }
+
+        function renderTaskSidebar() {
+            const list = document.getElementById('task-list');
+            let currentGroup = "";
+            let html = "";
+            tasks.forEach((t, i) => {
+                if (t.group !== currentGroup) {
+                    currentGroup = t.group;
+                    html += `<div class="mt-3 mb-1 px-2 text-xs font-bold text-slate-400">${currentGroup}</div>`;
+                }
+                const dot = t.status === 'completed' ? 'bg-green-500' : (t.status === 'incorrect' ? 'bg-red-500' : 'bg-slate-300');
+                html += `
+                    <div onclick="loadTask(${i})" id="task-card-${i}" class="task-card p-2 bg-white rounded-lg shadow-sm mb-1 border border-slate-200 ${activeTaskIdx === i ? 'active' : ''}">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-800 truncate">${t.id}. ${t.title}</span>
+                            <div class="w-1.5 h-1.5 rounded-full ${dot}"></div>
+                        </div>
+                    </div>`;
+            });
+            list.innerHTML = html;
+        }
+
+        function loadTask(idx) {
+            switchView('lab');
+            activeTaskIdx = idx;
+            const t = tasks[idx];
+            document.getElementById('current-task-title').innerText = `${t.group} · ${t.id} ${t.title}`;
+            document.getElementById('current-task-desc').innerText = t.desc;
+            
+            const editor = document.getElementById('editor');
+            editor.value = loadSavedQuery(t.id);
+            
+            const badge = document.getElementById('task-badge');
+            badge.classList.remove('hidden');
+            badge.className = `status-badge ${t.status === 'completed' ? 'status-completed' : (t.status === 'incorrect' ? 'status-incorrect' : 'status-not-attempted')}`;
+            badge.innerText = t.status.replace('_', ' ');
+
+            document.getElementById('feedback').classList.add('hidden');
+            document.getElementById('query-result').innerHTML = `<div class="h-full flex items-center justify-center text-slate-300 text-[10px] italic p-4 text-center">Run your query to see results here.</div>`;
+            
+            renderTaskSidebar();
+            updateReferenceTables(t);
+            editor.focus();
+            editor.setSelectionRange(editor.value.length, editor.value.length);
+        }
+
+        function updateReferenceTables(task) {
+            const nameSpan = document.getElementById('ref-table-name');
+            nameSpan.innerText = task.table;
+            const srcRes = db.exec(`SELECT * FROM ${task.table}`);
+            document.getElementById('source-table').innerHTML = generateTableHTML(srcRes[0].columns, srcRes[0].values);
+
+            const expRes = db.exec(task.sql);
+            document.getElementById('expected-result').innerHTML = generateTableHTML(expRes[0].columns, expRes[0].values);
+        }
+
+        function checkTask() {
+            const userSql = document.getElementById('editor').value.trim();
+            const feedback = document.getElementById('feedback');
+            const resultBox = document.getElementById('query-result');
+            const task = tasks[activeTaskIdx];
+            if (!userSql) return;
+
+            try {
+                const userRes = db.exec(userSql);
+                const correctRes = db.exec(task.sql);
+                
+                if (userRes.length > 0) {
+                    resultBox.innerHTML = generateTableHTML(userRes[0].columns, userRes[0].values);
+                    
+                    // We only compare the 'values' array so that different column names or aliases don't fail the check
+                    const isCorrect = JSON.stringify(userRes[0].values) === JSON.stringify(correctRes[0].values);
+                    
+                    if (isCorrect) {
+                        task.status = 'completed';
+                        feedback.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>Excellent! The output matches perfectly.</span>`;
+                        feedback.className = "mt-3 p-3 rounded-lg text-xs font-semibold flex bg-green-50 text-green-700 border border-green-200";
+                    } else if (task.status !== 'completed') {
+                        task.status = 'incorrect';
+                        feedback.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> <span>The result does not match the expected output. Try again.</span>`;
+                        feedback.className = "mt-3 p-3 rounded-lg text-xs font-semibold flex bg-red-50 text-red-700 border border-red-200";
+                    }
+                } else {
+                    if (task.status !== 'completed') task.status = 'incorrect';
+                    resultBox.innerHTML = "<div class='h-full flex items-center justify-center text-slate-300 text-[10px] italic p-4'>No rows returned.</div>";
+                }
+            } catch (err) {
+                feedback.innerHTML = `<strong>SQL Error:</strong> ${err.message}`;
+                feedback.className = "mt-3 p-3 rounded-lg text-xs font-mono bg-slate-900 text-red-400 leading-relaxed";
+            }
+            
+            saveProgress();
+            const badge = document.getElementById('task-badge');
+            badge.className = `status-badge ${task.status === 'completed' ? 'status-completed' : (task.status === 'incorrect' ? 'status-incorrect' : 'status-not-attempted')}`;
+            badge.innerText = task.status.replace('_', ' ');
+            renderTaskSidebar();
+        }
+
+        function renderSummary() {
+            const body = document.getElementById('summary-table-body');
+            const completed = tasks.filter(t => t.status === 'completed').length;
+            const incorrect = tasks.filter(t => t.status === 'incorrect').length;
+            const remaining = tasks.filter(t => t.status === 'not_attempted').length;
+            
+            document.getElementById('overall-score').innerText = `${completed}/${tasks.length}`;
+            document.getElementById('stat-completed').innerText = completed;
+            document.getElementById('stat-incorrect').innerText = incorrect;
+            document.getElementById('stat-remaining').innerText = remaining;
+            
+            body.innerHTML = tasks.map(t => {
+                const savedQuery = loadSavedQuery(t.id);
+                const queryHtml = savedQuery 
+                    ? `<div class="mt-2 p-2 bg-slate-100 rounded border border-slate-200 font-mono text-[10px] text-slate-600 whitespace-pre-wrap">${savedQuery}</div>` 
+                    : `<div class="mt-2 text-[10px] italic text-slate-400">No attempt recorded.</div>`;
+                
+                return `
+                <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                    <td class="p-4 text-center font-bold text-slate-400 text-[10px] align-top">${t.id}</td>
+                    <td class="p-4 align-top">
+                        <div class="font-bold text-slate-800 text-sm">${t.title}</div>
+                        <div class="text-[10px] text-slate-500 font-medium">${t.desc}</div>
+                        ${queryHtml}
+                    </td>
+                    <td class="p-4 text-center align-top"><span class="status-badge ${t.status === 'completed' ? 'status-completed' : (t.status === 'incorrect' ? 'status-incorrect' : 'status-not-attempted')}">${t.status.replace('_',' ')}</span></td>
+                </tr>`;
+            }).join('');
+        }
+
+        function generateTableHTML(columns, values) {
+            if (!columns || columns.length === 0) return "<div class='p-4 text-center text-slate-300 text-[10px]'>Empty set.</div>";
+            let html = `<table><thead><tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>`;
+            values.forEach(row => html += `<tr>${row.map(cell => `<td>${cell ?? '<span class="text-slate-300 italic">null</span>'}</td>`).join('')}</tr>`);
+            return html + `</tbody></table>`;
+        }
+        
+        window.onload = init;
+    </script>
+</body>
+</html>

@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SQL Visualizer</title>
+    <title>SQL Functions Practice</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
         
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        body { background-color: #f8fafc; color: #1e293b; }
+        .sql-workspace { font-family: 'Inter', sans-serif; }
         .code-font { font-family: 'Fira Code', 'Consolas', monospace; }
         
         .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -18,18 +20,18 @@
         
         .table-container { border: 1px solid #e2e8f0; border-radius: 8px; overflow: auto; background: white; height: 100%; }
         table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
-        th { background-color: #f8fafc; color: #64748b; font-weight: 700; text-align: left; padding: 4px 8px; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 5; text-transform: uppercase; font-size: 0.6rem; }
+        th { background-color: #f8fafc; color: #64748b; font-weight: 700; text-align: left; padding: 4px 8px; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 5; font-size: 0.6rem; }
         td { padding: 4px 8px; border-bottom: 1px solid #f1f5f9; color: #334155; white-space: nowrap; }
         
         .task-card { cursor: pointer; transition: all 0.2s; border-left: 4px solid transparent; }
-        .task-card.active { background-color: #eff6ff; border-left-color: #3b82f6; }
+        .task-card.active { background-color: #eef2ff; border-left-color: #6366f1; }
         
-        .status-badge { padding: 2px 8px; border-radius: 99px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+        .status-badge { padding: 2px 8px; border-radius: 99px; font-size: 0.7rem; font-weight: 700; }
         .status-not-attempted { background-color: #f1f5f9; color: #64748b; }
         .status-completed { background-color: #dcfce7; color: #166534; }
         .status-incorrect { background-color: #fee2e2; color: #991b1b; }
 
-        .panel-label { font-size: 9px; font-weight: 800; letter-spacing: 0.05em; margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
+        .panel-label { font-size: 11px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
         
         /* Ensure textarea behavior is strictly plain text */
         #editor {
@@ -41,33 +43,21 @@
         }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden">
-    <!-- Header -->
-    <header class="h-14 border-b border-slate-200 flex items-center px-6 justify-between bg-white shadow-sm z-10">
-        <div class="flex items-center gap-2">
-            <div class="bg-blue-600 p-1.5 rounded-lg shadow-blue-200 shadow-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5V19A9 3 0 0 0 21 19V5"></path><path d="M3 12A9 3 0 0 0 21 12"></path></svg>
-            </div>
-            <h1 class="font-bold text-slate-800 text-lg tracking-tight">SQL Visualizer</h1>
-        </div>
-        
-        <nav class="flex bg-slate-100 p-1 rounded-lg">
-            <button id="nav-lab" onclick="switchView('lab')" class="px-4 py-1.5 rounded-md text-sm font-semibold transition-all bg-white shadow-sm text-blue-600">Visualizer</button>
-            <button id="nav-summary" onclick="switchView('summary')" class="px-4 py-1.5 rounded-md text-sm font-semibold transition-all text-slate-500 hover:text-slate-700">Summary Dashboard</button>
-        </nav>
-    </header>
+<body data-task="sql" class="h-screen flex flex-col overflow-hidden bg-slate-100/70 text-slate-800 font-sans antialiased">
+    <header id="lesson-header"></header>
+    <script src="lesson2-shell.js"></script>
 
-    <!-- Lab View -->
-    <div id="view-lab" class="flex flex-1 overflow-hidden">
-        <!-- Sidebar -->
-        <aside class="w-64 border-r border-slate-200 bg-slate-50 flex flex-col">
-            <div class="p-4 border-b border-slate-200 bg-white flex justify-between items-center">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Task List</span>
-            </div>
-            <div id="task-list" class="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar"></div>
+    <div class="flex flex-1 overflow-hidden min-h-0">
+        <aside class="w-64 shrink-0 border-r border-slate-200 bg-white flex flex-col">
+            <nav class="p-3 space-y-1 border-b border-slate-200">
+                <button type="button" id="nav-lab" onclick="switchView('lab')" class="w-full text-left block px-3 py-2 rounded-xl text-sm font-bold border border-indigo-200 bg-indigo-50 text-indigo-800">Exercises</button>
+                <button type="button" id="nav-summary" onclick="switchView('summary')" class="w-full text-left block px-3 py-2 rounded-xl text-sm font-bold border border-transparent text-slate-600 hover:bg-slate-50">Summary</button>
+            </nav>
+            <div id="task-list" class="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar"></div>
         </aside>
 
-        <!-- Main Workspace -->
+        <div class="sql-workspace flex-1 flex flex-col min-w-0 overflow-hidden">
+    <div id="view-lab" class="flex flex-1 overflow-hidden min-h-0">
         <main class="flex-1 flex flex-col bg-white overflow-hidden">
             <!-- Top: Editor & Info -->
             <div class="p-4 bg-slate-50 border-b border-slate-200 shadow-inner">
@@ -104,9 +94,9 @@
                 
                 <!-- Col 1: Source Reference -->
                 <div id="reference-section" class="flex flex-col min-w-0">
-                    <div class="panel-label text-blue-600">
+                    <div class="panel-label text-indigo-600">
                         <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                        SOURCE: <span id="ref-table-name" class="font-black">...</span>
+                        Source: <span id="ref-table-name" class="font-black">...</span>
                     </div>
                     <div id="source-table" class="table-container border-blue-100 custom-scrollbar bg-blue-50/10"></div>
                 </div>
@@ -115,7 +105,7 @@
                 <div class="flex flex-col min-w-0">
                     <div class="panel-label text-emerald-600">
                         <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        EXPECTED RESULT
+                        Expected result
                     </div>
                     <div id="expected-result" class="table-container border-emerald-100 custom-scrollbar bg-emerald-50/10"></div>
                 </div>
@@ -124,7 +114,7 @@
                 <div class="flex flex-col min-w-0">
                     <div class="panel-label text-slate-500">
                         <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-                        YOUR RESULT
+                        Your result
                     </div>
                     <div id="query-result" class="table-container border-slate-200 custom-scrollbar">
                         <div class="h-full flex items-center justify-center text-slate-300 text-[10px] italic p-4 text-center">
@@ -137,7 +127,6 @@
         </main>
     </div>
 
-    <!-- Summary View -->
     <div id="view-summary" class="hidden flex-1 overflow-auto p-8 bg-slate-50 custom-scrollbar">
         <div class="max-w-4xl mx-auto">
             <div class="mb-8 flex items-end justify-between">
@@ -145,20 +134,20 @@
                     <h2 class="text-3xl font-bold text-slate-900">Learning Progress</h2>
                     <p class="text-slate-500 mt-1 font-medium">Completed tasks are tracked locally in your browser.</p>
                 </div>
-                <div id="overall-score" class="text-4xl font-black text-blue-600">0/35</div>
+                <div id="overall-score" class="text-4xl font-black text-blue-600">0/21</div>
             </div>
             <div class="grid grid-cols-3 gap-6 mb-8">
                 <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
-                    <div class="text-slate-400 text-xs font-bold uppercase mb-1">Completed</div>
+                    <div class="text-slate-400 text-xs font-bold mb-1">Completed</div>
                     <div id="stat-completed" class="text-3xl font-bold text-green-600">0</div>
                 </div>
                 <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
-                    <div class="text-slate-400 text-xs font-bold uppercase mb-1">Incorrect</div>
+                    <div class="text-slate-400 text-xs font-bold mb-1">Incorrect</div>
                     <div id="stat-incorrect" class="text-3xl font-bold text-red-500">0</div>
                 </div>
                 <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
-                    <div class="text-slate-400 text-xs font-bold uppercase mb-1">Remaining</div>
-                    <div id="stat-remaining" class="text-3xl font-bold text-slate-400">35</div>
+                    <div class="text-slate-400 text-xs font-bold mb-1">Remaining</div>
+                    <div id="stat-remaining" class="text-3xl font-bold text-slate-400">21</div>
                 </div>
             </div>
             <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -169,46 +158,34 @@
             </div>
         </div>
     </div>
+        </div>
+    </div>
 
     <script>
         let db;
         let activeTaskIdx = 0;
         const tasks = [
-            { id: "2.1", group: "Task 2", table: "books", title: "All Columns", desc: "Display all columns and all rows from the books table.", sql: "SELECT * FROM books;", status: 'not_attempted' },
-            { id: "2.2", group: "Task 2", table: "books", title: "Specific Columns", desc: "Display only the title and the price of every book.", sql: "SELECT title, price FROM books;", status: 'not_attempted' },
-            { id: "2.3", group: "Task 2", table: "books", title: "Filtering by Author", desc: "Display the title of each book written by 'Sunny Chan'.", sql: "SELECT title FROM books WHERE author = 'Sunny Chan';", status: 'not_attempted' },
-            { id: "2.4", group: "Task 2", table: "books", title: "Exact Match", desc: "Display all the details of the book titled 'Magic Rainbow'.", sql: "SELECT * FROM books WHERE title = 'Magic Rainbow';", status: 'not_attempted' },
-            { id: "2.5", group: "Task 2", table: "books", title: "Price Comparison", desc: "Display the title and the price of each book which has a price less than 35.", sql: "SELECT title, price FROM books WHERE price < 35;", status: 'not_attempted' },
-            { id: "2.6", group: "Task 2", table: "books", title: "Negative Filter", desc: "Display the title and the author of each book which is NOT written by 'Chris Ho'.", sql: "SELECT title, author FROM books WHERE author != 'Chris Ho';", status: 'not_attempted' },
-            { id: "2.7", group: "Task 2", table: "books", title: "Unique Values", desc: "Display all authors in the table (no name should appear twice).", sql: "SELECT DISTINCT author FROM books;", status: 'not_attempted' },
-            { id: "3.1", group: "Task 3", table: "cakes", title: "Weight Filter", desc: "Display the name and the weight of each cake which has a weight greater than 600 g.", sql: "SELECT name, weight FROM cakes WHERE weight > 600;", status: 'not_attempted' },
-            { id: "3.2", group: "Task 3", table: "cakes", title: "Multiple Filters", desc: "Display the details of each cake which has a weight greater than 600 g AND a price lower than $300.", sql: "SELECT * FROM cakes WHERE weight > 600 AND price < 300;", status: 'not_attempted' },
-            { id: "3.3", group: "Task 3", table: "cakes", title: "OR Filter", desc: "Display the name and the price of each cake which is named 'Tiramisu' OR has a price at most $120.", sql: "SELECT name, price FROM cakes WHERE name = 'Tiramisu' OR price <= 120;", status: 'not_attempted' },
-            { id: "3.4", group: "Task 3", table: "cakes", title: "Sort Price ASC", desc: "Display the name and the price of all cakes. Sorted the cakes by price in ascending order (the cheapest cake at the top).", sql: "SELECT name, price FROM cakes ORDER BY price ASC;", status: 'not_attempted' },
-            { id: "3.5", group: "Task 3", table: "cakes", title: "Sort Weight DESC", desc: "Display the name and the weight of all cakes. Sort the cakes by weight in descending order (the heaviest cake at the top).", sql: "SELECT name, weight FROM cakes ORDER BY weight DESC;", status: 'not_attempted' },
-            { id: "3.6", group: "Task 3", table: "cakes", title: "Multiple Sort", desc: "Display the details of all cakes. Sort the cakes by weight in descending order, and then by price in ascending order.", sql: "SELECT * FROM cakes ORDER BY weight DESC, price ASC;", status: 'not_attempted' },
-            { id: "3.7", group: "Task 3", table: "cakes", title: "Where & Sort", desc: "Display the details of each cake which has a price greater than $200 and smaller than $300. Sort the cakes by weight in ascending order.", sql: "SELECT * FROM cakes WHERE price > 200 AND price < 300 ORDER BY weight ASC;", status: 'not_attempted' },
-            { id: "4.1", group: "Task 4", table: "scores", title: "Count All", desc: "Find the number of students in the scores table.", sql: "SELECT COUNT(*) FROM scores;", status: 'not_attempted' },
-            { id: "4.2", group: "Task 4", table: "scores", title: "Count High Chin", desc: "Find the number of students who got higher than 85 in the chin exam.", sql: "SELECT COUNT(*) FROM scores WHERE chin > 85;", status: 'not_attempted' },
-            { id: "4.3", group: "Task 4", table: "scores", title: "AND Count", desc: "Find the number of students who got higher than 85 in the eng exam AND the math exam.", sql: "SELECT COUNT(*) FROM scores WHERE eng > 85 AND math > 85;", status: 'not_attempted' },
-            { id: "4.4", group: "Task 4", table: "scores", title: "Average Scores", desc: "Find the average scores in the chin, eng and math exams.", sql: "SELECT AVG(chin), AVG(eng), AVG(math) FROM scores;", status: 'not_attempted' },
-            { id: "4.5", group: "Task 4", table: "scores", title: "Max Scores", desc: "Find the highest scores in the chin, eng and math exams.", sql: "SELECT MAX(chin), MAX(eng), MAX(math) FROM scores;", status: 'not_attempted' },
-            { id: "4.6", group: "Task 4", table: "scores", title: "Sort Score", desc: "Display the sid and the chin exam score of every student. Sort the data by the chin exam score in descending order (the highest score at the top).", sql: "SELECT sid, chin FROM scores ORDER BY chin DESC;", status: 'not_attempted' },
-            { id: "4.7", group: "Task 4", table: "scores", title: "Class Filter", desc: "Display the sid and the math exam score of 2E student. Sort the data by the math exam score in descending order (the highest score at the top).", sql: "SELECT sid, math FROM scores WHERE class = '2E' ORDER BY math DESC;", status: 'not_attempted' },
-            { id: "4.8", group: "Task 4", table: "scores", title: "Weighted Avg", desc: "Display the sid and the weighted average of each student. Weighted average = (chin × 2 + eng × 2 + math × 1.5) ÷ 5.5", sql: "SELECT sid, (chin * 2 + eng * 2 + math * 1.5) / 5.5 FROM scores;", status: 'not_attempted' },
-            { id: "4.9", group: "Task 4", table: "scores", title: "Group Chin", desc: "Display the class and the average chin exam score of each class.", sql: "SELECT class, AVG(chin) FROM scores GROUP BY class;", status: 'not_attempted' },
-            { id: "4.10", group: "Task 4", table: "scores", title: "Group Eng", desc: "Display the class and the highest eng exam score of each class.", sql: "SELECT class, MAX(eng) FROM scores GROUP BY class;", status: 'not_attempted' },
-            { id: "4.11", group: "Task 4", table: "scores", title: "Group & Sort", desc: "Display the class and the average math exam score of each class. Sort the data by the average math exam score in descending order (Highest average score at the top).", sql: "SELECT class, AVG(math) FROM scores GROUP BY class ORDER BY AVG(math) DESC;", status: 'not_attempted' },
-            { id: "E.1", group: "Wildcards", table: "dictionary", title: "Start 'e' (3L)", desc: "Display every word which has 3 letters and starts with 'e'.", sql: "SELECT word FROM dictionary WHERE word LIKE 'e__';", status: 'not_attempted' },
-            { id: "E.2", group: "Wildcards", table: "dictionary", title: "End 'ar' (3L)", desc: "Display every word which has 3 letters and ends with 'ar'.", sql: "SELECT word FROM dictionary WHERE word LIKE '_ar';", status: 'not_attempted' },
-            { id: "E.3", group: "Wildcards", table: "dictionary", title: "Middle 'ee' (4L)", desc: "Display every word which has 4 letters and has 'ee' in the middle.", sql: "SELECT word FROM dictionary WHERE word LIKE '_ee_';", status: 'not_attempted' },
-            { id: "E.4", group: "Wildcards", table: "dictionary", title: "Start/End (5L)", desc: "Display every word which has 5 letters, starts with 'a' and ends with 't'.", sql: "SELECT word FROM dictionary WHERE word LIKE 'a___t';", status: 'not_attempted' },
-            { id: "E.5", group: "Wildcards", table: "dictionary", title: "Ends with 'a'", desc: "Display every word which ends with 'a'.", sql: "SELECT word FROM dictionary WHERE word LIKE '%a';", status: 'not_attempted' },
-            { id: "E.6", group: "Wildcards", table: "dictionary", title: "Start 'b' End 't'", desc: "Display every word which starts with 'b' and ends with 't'.", sql: "SELECT word FROM dictionary WHERE word LIKE 'b%t';", status: 'not_attempted' },
-            { id: "E.7", group: "Wildcards", table: "dictionary", title: "Double 'b'", desc: "Display every word which includes at least two 'b'.", sql: "SELECT word FROM dictionary WHERE word LIKE '%b%b%';", status: 'not_attempted' },
-            { id: "E.8", group: "Wildcards", table: "dictionary", title: "Start 'y' (4L+)", desc: "Display every word which has at least 4 letters and starts with 'y'.", sql: "SELECT word FROM dictionary WHERE word LIKE 'y___%';", status: 'not_attempted' },
-            { id: "E.9", group: "Wildcards", table: "dictionary", title: "Prefix logic", desc: "Display every word which starts with 'ab' and NOT ends with 'e'.", sql: "SELECT word FROM dictionary WHERE word LIKE 'ab%' AND word NOT LIKE '%e';", status: 'not_attempted' },
-            { id: "E.10", group: "Wildcards", table: "dictionary", title: "Count 'c'", desc: "Find the number of words which include exactly one 'c'.", sql: "SELECT COUNT(*) FROM dictionary WHERE word LIKE '%c%' AND word NOT LIKE '%c%c%';", status: 'not_attempted' }
+            { id: "1.1", group: "Level 1 · Scores", table: "scores", title: "Count All", desc: "Find the number of students in the scores table.", sql: "SELECT COUNT(*) FROM scores;", status: 'not_attempted' },
+            { id: "1.2", group: "Level 1 · Scores", table: "scores", title: "Count High Chin", desc: "Find the number of students who got higher than 85 in the chin exam.", sql: "SELECT COUNT(*) FROM scores WHERE chin > 85;", status: 'not_attempted' },
+            { id: "1.3", group: "Level 1 · Scores", table: "scores", title: "AND Count", desc: "Find the number of students who got higher than 85 in the eng exam AND the math exam.", sql: "SELECT COUNT(*) FROM scores WHERE eng > 85 AND math > 85;", status: 'not_attempted' },
+            { id: "1.4", group: "Level 1 · Scores", table: "scores", title: "Average Scores", desc: "Find the average scores in the chin, eng and math exams.", sql: "SELECT AVG(chin), AVG(eng), AVG(math) FROM scores;", status: 'not_attempted' },
+            { id: "1.5", group: "Level 1 · Scores", table: "scores", title: "Max Scores", desc: "Find the highest scores in the chin, eng and math exams.", sql: "SELECT MAX(chin), MAX(eng), MAX(math) FROM scores;", status: 'not_attempted' },
+            { id: "1.6", group: "Level 1 · Scores", table: "scores", title: "Sort Score", desc: "Display the sid and the chin exam score of every student. Sort the data by the chin exam score in descending order (the highest score at the top).", sql: "SELECT sid, chin FROM scores ORDER BY chin DESC;", status: 'not_attempted' },
+            { id: "1.7", group: "Level 1 · Scores", table: "scores", title: "Class Filter", desc: "Display the sid and the math exam score of 2E student. Sort the data by the math exam score in descending order (the highest score at the top).", sql: "SELECT sid, math FROM scores WHERE class = '2E' ORDER BY math DESC;", status: 'not_attempted' },
+            { id: "1.8", group: "Level 1 · Scores", table: "scores", title: "Weighted Avg", desc: "Display the sid and the weighted average of each student. Weighted average = (chin × 2 + eng × 2 + math × 1.5) ÷ 5.5", sql: "SELECT sid, (chin * 2 + eng * 2 + math * 1.5) / 5.5 FROM scores;", status: 'not_attempted' },
+            { id: "1.9", group: "Level 1 · Scores", table: "scores", title: "Group Chin", desc: "Display the class and the average chin exam score of each class.", sql: "SELECT class, AVG(chin) FROM scores GROUP BY class;", status: 'not_attempted' },
+            { id: "1.10", group: "Level 1 · Scores", table: "scores", title: "Group Eng", desc: "Display the class and the highest eng exam score of each class.", sql: "SELECT class, MAX(eng) FROM scores GROUP BY class;", status: 'not_attempted' },
+            { id: "1.11", group: "Level 1 · Scores", table: "scores", title: "Group & Sort", desc: "Display the class and the average math exam score of each class. Sort the data by the average math exam score in descending order (Highest average score at the top).", sql: "SELECT class, AVG(math) FROM scores GROUP BY class ORDER BY AVG(math) DESC;", status: 'not_attempted' },
+            { id: "2.1", group: "Level 2 · Dictionary", table: "dictionary", title: "Start 'e' (3L)", desc: "Display every word which has 3 letters and starts with 'e'.", sql: "SELECT word FROM dictionary WHERE word LIKE 'e__';", status: 'not_attempted' },
+            { id: "2.2", group: "Level 2 · Dictionary", table: "dictionary", title: "End 'ar' (3L)", desc: "Display every word which has 3 letters and ends with 'ar'.", sql: "SELECT word FROM dictionary WHERE word LIKE '_ar';", status: 'not_attempted' },
+            { id: "2.3", group: "Level 2 · Dictionary", table: "dictionary", title: "Middle 'ee' (4L)", desc: "Display every word which has 4 letters and has 'ee' in the middle.", sql: "SELECT word FROM dictionary WHERE word LIKE '_ee_';", status: 'not_attempted' },
+            { id: "2.4", group: "Level 2 · Dictionary", table: "dictionary", title: "Start/End (5L)", desc: "Display every word which has 5 letters, starts with 'a' and ends with 't'.", sql: "SELECT word FROM dictionary WHERE word LIKE 'a___t';", status: 'not_attempted' },
+            { id: "2.5", group: "Level 2 · Dictionary", table: "dictionary", title: "Ends with 'a'", desc: "Display every word which ends with 'a'.", sql: "SELECT word FROM dictionary WHERE word LIKE '%a';", status: 'not_attempted' },
+            { id: "2.6", group: "Level 2 · Dictionary", table: "dictionary", title: "Start 'b' End 't'", desc: "Display every word which starts with 'b' and ends with 't'.", sql: "SELECT word FROM dictionary WHERE word LIKE 'b%t';", status: 'not_attempted' },
+            { id: "2.7", group: "Level 2 · Dictionary", table: "dictionary", title: "Double 'b'", desc: "Display every word which includes at least two 'b'.", sql: "SELECT word FROM dictionary WHERE word LIKE '%b%b%';", status: 'not_attempted' },
+            { id: "2.8", group: "Level 2 · Dictionary", table: "dictionary", title: "Start 'y' (4L+)", desc: "Display every word which has at least 4 letters and starts with 'y'.", sql: "SELECT word FROM dictionary WHERE word LIKE 'y___%';", status: 'not_attempted' },
+            { id: "2.9", group: "Level 2 · Dictionary", table: "dictionary", title: "Prefix logic", desc: "Display every word which starts with 'ab' and NOT ends with 'e'.", sql: "SELECT word FROM dictionary WHERE word LIKE 'ab%' AND word NOT LIKE '%e';", status: 'not_attempted' },
+            { id: "2.10", group: "Level 2 · Dictionary", table: "dictionary", title: "Count 'c'", desc: "Find the number of words which include exactly one 'c'.", sql: "SELECT COUNT(*) FROM dictionary WHERE word LIKE '%c%' AND word NOT LIKE '%c%c%';", status: 'not_attempted' }
         ];
 
         // --- Persistence Logic ---
@@ -217,20 +194,20 @@
             const task = tasks[activeTaskIdx];
             // Access raw plain text value directly
             const query = document.getElementById('editor').value;
-            localStorage.setItem(`sql_lab_query_${task.id}`, query);
+            localStorage.setItem(`sql_functions_query_${task.id}`, query);
         }
 
         function loadSavedQuery(taskId) {
-            return localStorage.getItem(`sql_lab_query_${taskId}`) || "";
+            return localStorage.getItem(`sql_functions_query_${taskId}`) || "";
         }
 
         function saveProgress() {
             const progress = tasks.map(t => ({ id: t.id, status: t.status }));
-            localStorage.setItem('sql_lab_progress', JSON.stringify(progress));
+            localStorage.setItem('sql_functions_progress', JSON.stringify(progress));
         }
 
         function loadProgress() {
-            const saved = localStorage.getItem('sql_lab_progress');
+            const saved = localStorage.getItem('sql_functions_progress');
             if (saved) {
                 const progressData = JSON.parse(saved);
                 progressData.forEach(p => {
@@ -246,20 +223,6 @@
             const SQL = await initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${f}` });
             db = new SQL.Database();
             db.run(`
-                CREATE TABLE books ( id INTEGER PRIMARY KEY, title TEXT, author TEXT, price INTEGER );
-                INSERT INTO books VALUES 
-                (1, 'The Happy Little Tree', 'Sunny Chan', 45), (2, 'Sharing is Caring', 'Mary Lee', 38),
-                (3, 'The Brave Little Puppy', 'Sunny Chan', 50), (4, 'Magic Rainbow', 'Chris Ho', 48),
-                (5, 'Helping Hands at School', 'Chris Ho', 35), (6, 'Kindness is a Superpower', 'Chris Ho', 40),
-                (7, 'Dancing Stars at Night', 'Mary Lee', 48), (8, 'Thank You, Teachers', 'Sunny Chan', 30);
-                
-                CREATE TABLE cakes ( id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, weight INTEGER, price INTEGER );
-                INSERT INTO cakes (name, weight, price) VALUES 
-                ('Cheese Cake', 500, 180), ('Strawberry Cake', 600, 220), ('Blueberry Cheese Cake', 450, 150), 
-                ('Mango Cake', 400, 120), ('Matcha Cake', 750, 250), ('Mango Crispy', 800, 280), 
-                ('Tiramisu', 550, 260), ('Coffee Cake', 300, 95), ('Chocolate Cake', 500, 140), 
-                ('Durian Cake', 900, 380), ('Blueberry Cake', 350, 110), ('Black Forest', 400, 130);
-                
                 CREATE TABLE scores ( sid TEXT PRIMARY KEY, class TEXT, chin INTEGER, eng INTEGER, math INTEGER );
                 INSERT INTO scores VALUES 
                 ('S001', '2A', 85, 78, 92), ('S002', '2C', 72, 88, 85), ('S003', '2B', 94, 91, 88),
@@ -278,12 +241,18 @@
             loadTask(0);
         }
 
+        function sidebarNavClass(on) {
+            return on
+                ? 'w-full text-left block px-3 py-2 rounded-xl text-sm font-bold border border-indigo-200 bg-indigo-50 text-indigo-800'
+                : 'w-full text-left block px-3 py-2 rounded-xl text-sm font-bold border border-transparent text-slate-600 hover:bg-slate-50';
+        }
+
         function switchView(view) {
             const isLab = view === 'lab';
             document.getElementById('view-lab').classList.toggle('hidden', !isLab);
             document.getElementById('view-summary').classList.toggle('hidden', isLab);
-            document.getElementById('nav-lab').className = isLab ? "px-4 py-1.5 rounded-md text-sm font-semibold bg-white shadow-sm text-blue-600" : "px-4 py-1.5 rounded-md text-sm font-semibold text-slate-500 hover:text-slate-700";
-            document.getElementById('nav-summary').className = !isLab ? "px-4 py-1.5 rounded-md text-sm font-semibold bg-white shadow-sm text-blue-600" : "px-4 py-1.5 rounded-md text-sm font-semibold text-slate-500 hover:text-slate-700";
+            document.getElementById('nav-lab').className = sidebarNavClass(isLab);
+            document.getElementById('nav-summary').className = sidebarNavClass(!isLab);
             if (!isLab) renderSummary();
         }
 
@@ -294,7 +263,7 @@
             tasks.forEach((t, i) => {
                 if (t.group !== currentGroup) {
                     currentGroup = t.group;
-                    html += `<div class="mt-4 mb-2 px-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">${currentGroup}</div>`;
+                    html += `<div class="mt-3 mb-1 px-2 text-xs font-bold text-slate-400">${currentGroup}</div>`;
                 }
                 const dot = t.status === 'completed' ? 'bg-green-500' : (t.status === 'incorrect' ? 'bg-red-500' : 'bg-slate-300');
                 html += `
@@ -309,13 +278,14 @@
         }
 
         function loadTask(idx) {
+            switchView('lab');
             activeTaskIdx = idx;
             const t = tasks[idx];
-            document.getElementById('current-task-title').innerText = `${t.group} - Task ${t.id}: ${t.title}`;
+            document.getElementById('current-task-title').innerText = `${t.group} · ${t.id} ${t.title}`;
             document.getElementById('current-task-desc').innerText = t.desc;
             
-            // Load saved query for this specific task
-            document.getElementById('editor').value = loadSavedQuery(t.id);
+            const editor = document.getElementById('editor');
+            editor.value = loadSavedQuery(t.id);
             
             const badge = document.getElementById('task-badge');
             badge.classList.remove('hidden');
@@ -327,6 +297,8 @@
             
             renderTaskSidebar();
             updateReferenceTables(t);
+            editor.focus();
+            editor.setSelectionRange(editor.value.length, editor.value.length);
         }
 
         function updateReferenceTables(task) {
