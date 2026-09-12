@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data types practice</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-100/70 text-slate-800 min-h-screen font-sans antialiased flex flex-col selection:bg-indigo-100 selection:text-indigo-900">
+
+    <header class="bg-white border-b border-slate-200/80 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-500 text-xl">
+                    <i class="fa-solid fa-database"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-2xl leading-tight text-slate-800">Data types practice</h1>
+                    <p class="text-sm text-slate-500 font-medium">Interactive Relational Database Masterclass</p>
+                </div>
+            </div>
+            <div class="ml-auto text-sm font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-xl">
+                Data types
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-5 space-y-5">
+        <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+            <h2 class="text-lg font-bold text-slate-700 mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-book-open text-indigo-400"></i> Scenario
+            </h2>
+            <p class="text-base text-slate-600 leading-relaxed mb-3">
+                Choose the best data type for each column. Use the sample value as a clue.
+            </p>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 text-base">
+                <div class="rounded-xl border border-amber-100 bg-amber-50/70 p-3">
+                    <p class="font-bold font-mono text-lg text-amber-800 mb-1">int</p>
+                    <p class="text-slate-600 text-sm leading-relaxed">Whole numbers such as ids and counts.</p>
+                </div>
+                <div class="rounded-xl border border-violet-100 bg-violet-50/70 p-3">
+                    <p class="font-bold font-mono text-lg text-violet-800 mb-1">varchar</p>
+                    <p class="text-slate-600 text-sm leading-relaxed">Short text such as names, emails, and urls.</p>
+                </div>
+                <div class="rounded-xl border border-emerald-100 bg-emerald-50/70 p-3">
+                    <p class="font-bold font-mono text-lg text-emerald-800 mb-1">decimal</p>
+                    <p class="text-slate-600 text-sm leading-relaxed">Numbers with a decimal point, such as prices.</p>
+                </div>
+                <div class="rounded-xl border border-rose-100 bg-rose-50/70 p-3">
+                    <p class="font-bold font-mono text-lg text-rose-800 mb-1">date</p>
+                    <p class="text-slate-600 text-sm leading-relaxed">Calendar days such as birthdays and order dates.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4">
+                <i class="fa-solid fa-list-check text-indigo-400"></i> Match each column
+            </h3>
+            <div id="question-grid" class="grid md:grid-cols-2 gap-4"></div>
+        </section>
+
+        <div class="flex flex-wrap items-center justify-end gap-2.5">
+            <button onclick="resetQuiz()" class="px-4 py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-sm font-bold text-slate-700 border border-indigo-100 transition">
+                <i class="fa-solid fa-rotate-left text-sm"></i> Reset
+            </button>
+            <button onclick="checkAnswers()" class="px-5 py-2.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-sm font-bold text-emerald-800 border border-emerald-200 transition">
+                <i class="fa-solid fa-check-circle"></i> Check answers
+            </button>
+        </div>
+
+        <div id="validation-report" class="hidden rounded-2xl p-5 border transition-all"></div>
+    </main>
+
+    <footer class="bg-white border-t border-slate-200/80 text-center py-4 text-sm text-slate-500 font-medium">
+        Data types practice
+    </footer>
+
+    <script>
+        const STORAGE_KEY = 'column-datatype-progress-v2';
+        const TYPES = ['int', 'varchar', 'decimal', 'date'];
+        const QUESTIONS = [
+            { id: 'q1', name: 'user_id', example: '1042', correct: 'int' },
+            { id: 'q2', name: 'username', example: 'alex_123', correct: 'varchar' },
+            { id: 'q3', name: 'price', example: '19.99', correct: 'decimal' },
+            { id: 'q4', name: 'birth_date', example: '2008-05-14', correct: 'date' },
+            { id: 'q5', name: 'email', example: 'alex@mail.com', correct: 'varchar' },
+            { id: 'q6', name: 'quantity', example: '3', correct: 'int' },
+            { id: 'q7', name: 'rating', example: '4.5', correct: 'decimal' },
+            { id: 'q8', name: 'order_date', example: '2026-09-12', correct: 'date' }
+        ];
+
+        const TYPE_STYLE = {
+            int: { on: 'bg-amber-100 text-amber-800 border-amber-200', off: 'bg-indigo-50/50 text-slate-600 border-indigo-100 hover:bg-indigo-50' },
+            varchar: { on: 'bg-violet-100 text-violet-800 border-violet-200', off: 'bg-indigo-50/50 text-slate-600 border-indigo-100 hover:bg-indigo-50' },
+            decimal: { on: 'bg-emerald-100 text-emerald-800 border-emerald-200', off: 'bg-indigo-50/50 text-slate-600 border-indigo-100 hover:bg-indigo-50' },
+            date: { on: 'bg-rose-100 text-rose-800 border-rose-200', off: 'bg-indigo-50/50 text-slate-600 border-indigo-100 hover:bg-indigo-50' }
+        };
+
+        let answers = {};
+
+        function loadProgress() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return {};
+                const parsed = JSON.parse(raw);
+                return parsed.answers && typeof parsed.answers === 'object' ? parsed.answers : {};
+            } catch (err) {
+                return {};
+            }
+        }
+
+        function saveProgress(extra) {
+            extra = extra || {};
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    answers: answers,
+                    completed: !!extra.completed,
+                    updatedAt: new Date().toISOString()
+                }));
+            } catch (err) {}
+        }
+
+        function setType(id, type) {
+            answers[id] = answers[id] === type ? '' : type;
+            saveProgress();
+            renderQuestions();
+        }
+
+        function renderQuestions() {
+            document.getElementById('question-grid').innerHTML = QUESTIONS.map((q) => {
+                const selected = answers[q.id] || '';
+                return `
+                    <article class="border border-indigo-100 bg-white rounded-2xl p-4 shadow-sm space-y-3">
+                        <p class="font-mono font-bold text-lg text-indigo-800">${q.name}</p>
+                        <p class="text-sm text-slate-600 bg-indigo-50/70 border border-indigo-100 rounded-xl px-3 py-2">
+                            Sample: <span class="font-mono">${q.example}</span>
+                        </p>
+                        <div>
+                            <p class="text-sm font-bold text-slate-700 mb-1.5">Data type</p>
+                            <div class="flex items-center gap-1.5">
+                                ${TYPES.map((t) => `
+                                    <button type="button" onclick="setType('${q.id}', '${t}')"
+                                        class="flex-1 py-2 rounded-lg text-sm font-bold transition border ${selected === t ? TYPE_STYLE[t].on : TYPE_STYLE[t].off}">
+                                        ${t}
+                                    </button>`).join('')}
+                            </div>
+                        </div>
+                    </article>`;
+            }).join('');
+        }
+
+        function checkAnswers() {
+            const reportEl = document.getElementById('validation-report');
+            reportEl.classList.remove('hidden');
+            const errors = [];
+            QUESTIONS.forEach((q) => {
+                if (!answers[q.id]) {
+                    errors.push(`Column <span class="font-mono font-bold">${q.name}</span> still needs a data type.`);
+                } else if (answers[q.id] !== q.correct) {
+                    errors.push(`Column <span class="font-mono font-bold">${q.name}</span> should be <b>${q.correct}</b> (you selected <i>${answers[q.id]}</i>).`);
+                }
+            });
+
+            if (errors.length === 0) {
+                saveProgress({ completed: true });
+                reportEl.className = 'rounded-2xl p-6 bg-emerald-50/90 border border-emerald-200 text-emerald-950 shadow-sm space-y-3';
+                reportEl.innerHTML = `
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-11 h-11 rounded-xl bg-emerald-100 border border-emerald-200 text-emerald-700 flex items-center justify-center text-2xl">
+                            <i class="fa-solid fa-trophy"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-xl">All data types look right</h3>
+                            <p class="text-base text-emerald-800">int for whole numbers, varchar for short text, decimal for money or scores, and date for calendar days.</p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-emerald-800">You can reset and try again whenever you want.</p>`;
+            } else {
+                reportEl.className = 'rounded-2xl p-6 bg-rose-50/90 border border-rose-200 text-rose-950 shadow-sm space-y-3';
+                reportEl.innerHTML = `
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-11 h-11 rounded-xl bg-rose-100 border border-rose-200 text-rose-700 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-xl">A few data types need another look (${errors.length})</h3>
+                            <p class="text-base text-rose-800">Check the sample values and try again.</p>
+                        </div>
+                    </div>
+                    <ul class="list-disc list-inside text-base space-y-1.5 pl-2 text-rose-900">
+                        ${errors.slice(0, 5).map((err) => `<li>${err}</li>`).join('')}
+                        ${errors.length > 5 ? `<li class="font-bold">…and ${errors.length - 5} more to fix.</li>` : ''}
+                    </ul>`;
+            }
+            reportEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function resetQuiz() {
+            answers = {};
+            saveProgress();
+            document.getElementById('validation-report').classList.add('hidden');
+            renderQuestions();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            answers = loadProgress();
+            renderQuestions();
+        });
+    </script>
+</body>
+</html>

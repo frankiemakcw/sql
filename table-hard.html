@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movies — Level 3 Primary Key Task</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .table-card { transition: all 0.2s ease-in-out; }
+        .table-card:hover { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06), 0 8px 10px -6px rgba(0, 0, 0, 0.03); }
+        .dragging { border-color: #4f46e5 !important; box-shadow: 0 0 0 2px #6366f1; opacity: 1; }
+        .drop-ready { border-color: #a5b4fc !important; }
+        .drag-over { border-color: #4f46e5 !important; background-color: #eef2ff !important; box-shadow: inset 0 0 0 1px #6366f1; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-100/70 text-slate-800 min-h-screen font-sans antialiased flex flex-col selection:bg-indigo-100 selection:text-indigo-900">
+
+    <header class="bg-white border-b border-slate-200/80 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-500 text-xl">
+                    <i class="fa-solid fa-key"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-xl leading-tight text-slate-800">Primary Key Practice</h1>
+                    <p class="text-xs text-slate-500 font-medium">Interactive Relational Database Masterclass</p>
+                </div>
+            </div>
+            <nav class="ml-auto flex flex-wrap items-center gap-1.5 text-xs font-bold">
+                <a href="table-overview.html" class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">Overview</a>
+                <a href="table-easy.html" class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">Level 1</a>
+                <a href="table-medium.html" class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">Level 2</a>
+                <a href="table-hard.html" class="px-2.5 py-1.5 rounded-lg border border-indigo-300 bg-indigo-50 text-indigo-800">Level 3</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-5 flex flex-col">
+        <section class="space-y-5">
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                <h2 class="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-book-open text-indigo-600"></i> Scenario
+                </h2>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    A cinema keeps one <b>movies</b> table: an id, the title, the director, the release year, and a rating.
+                    Fill the five slots, mark the primary key, and leave leftover attributes unused in the pool.
+                </p>
+            </div>
+
+            <div id="validation-report" class="hidden rounded-2xl p-5 border transition-all"></div>
+
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-3.5">
+                    <div class="flex items-center gap-2.5">
+                        <h3 class="text-sm sm:text-base font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-boxes-stacked text-indigo-600 text-lg"></i> Unassigned data attributes pool
+                        </h3>
+                        <span id="pool-count" class="text-xs font-mono font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-lg">9 attributes remaining</span>
+                    </div>
+                    <div class="flex items-center gap-2.5">
+                        <button onclick="resetSchemaBuilder()" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 border border-slate-300 transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-rotate-left text-xs"></i> Reset
+                        </button>
+                        <button onclick="validateSchema()" class="px-4 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-xs font-bold text-emerald-800 border border-emerald-200 transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-check-circle text-sm"></i> Validate Schema
+                        </button>
+                    </div>
+                </div>
+                <div id="attributes-pool" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDropToPool(event)" class="flex flex-wrap gap-2.5 min-h-[56px] p-3.5 bg-slate-50/80 border border-slate-200 rounded-xl items-center"></div>
+            </div>
+
+            <div class="max-w-3xl">
+                <div class="table-card bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col shadow-sm">
+                    <div class="bg-indigo-50/70 border-b border-indigo-100 p-3.5 sm:p-4 flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <i class="fa-solid fa-film text-indigo-400 text-lg"></i>
+                            <span class="font-bold text-base sm:text-lg text-slate-800">Movies Table</span>
+                            <span class="text-xs text-slate-500 font-medium">(5 Columns)</span>
+                        </div>
+                        <span class="text-xs bg-white/80 text-indigo-500 px-2.5 py-1 rounded-lg font-mono font-medium border border-indigo-100">Entity: Film</span>
+                    </div>
+                    <div id="table-drop-movies" onclick="handleTableClick('movies')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'movies')" class="p-3.5 sm:p-4 flex-1 space-y-3 min-h-[320px] transition-colors border-2 border-dashed border-transparent"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-white border-t border-slate-200/80 text-center py-4 text-xs sm:text-sm text-slate-500 font-medium">
+        Primary Key Practice · Level 3
+    </footer>
+
+    <script>
+        window.PK_TASK = {
+            levelId: 3,
+            tables: [
+                { id: 'movies', name: 'Movies', slots: 5 }
+            ],
+            attributes: [
+                { id: 'attr-d1', name: 'actor_age', unused: true, correctKey: 'DATA' },
+                { id: 'attr-2', name: 'title', targetTable: 'movies', correctKey: 'DATA' },
+                { id: 'attr-d2', name: 'popcorn_price', unused: true, correctKey: 'DATA' },
+                { id: 'attr-1', name: 'movie_id', targetTable: 'movies', correctKey: 'PK' },
+                { id: 'attr-4', name: 'release_year', targetTable: 'movies', correctKey: 'DATA' },
+                { id: 'attr-d3', name: 'theater_address', unused: true, correctKey: 'DATA' },
+                { id: 'attr-3', name: 'director', targetTable: 'movies', correctKey: 'DATA' },
+                { id: 'attr-d4', name: 'snack_menu', unused: true, correctKey: 'DATA' },
+                { id: 'attr-5', name: 'rating', targetTable: 'movies', correctKey: 'DATA' }
+            ],
+            successMessage: 'The movies table has the right columns, extras stayed unused, and movie_id is the primary key.',
+            successRelations: [
+                'Movies.movie_id (Primary Key)'
+            ]
+        };
+    </script>
+    <script src="table-progress.js"></script>
+    <script src="table-engine.js"></script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IG Database Architect - Interactive Database Design</title>
+    <title>Instagram Database Architect — Level 2 Schema Task</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -15,9 +15,18 @@
         .table-card:hover {
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
         }
+        .dragging {
+            border-color: #4f46e5 !important;
+            box-shadow: 0 0 0 2px #6366f1;
+            opacity: 1;
+        }
+        .drop-ready {
+            border-color: #a5b4fc !important;
+        }
         .drag-over {
-            border-color: #6366f1 !important;
+            border-color: #4f46e5 !important;
             background-color: #eef2ff !important;
+            box-shadow: inset 0 0 0 1px #6366f1;
         }
         /* Custom scrollbar */
         ::-webkit-scrollbar {
@@ -42,20 +51,23 @@
     <header class="bg-white border-b border-slate-200/80 sticky top-0 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-slate-700 flex items-center justify-center text-white text-xl shadow-sm">
+                <div class="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-500 text-xl">
                     <i class="fa-solid fa-database"></i>
                 </div>
                 <div>
                     <h1 class="font-bold text-xl leading-tight text-slate-800">
-                        IG Database Architect
+                        Instagram Database Architect
                     </h1>
                     <p class="text-xs text-slate-500 font-medium">Interactive Relational Database Masterclass</p>
                 </div>
             </div>
 
-            <div class="flex items-center gap-2 bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-1.5 rounded-xl text-xs font-bold">
-                <i class="fa-solid fa-diagram-project"></i> Schema Builder Workspace
-            </div>
+            <nav class="ml-auto flex flex-wrap items-center gap-1.5 text-xs font-bold">
+                <a href="column-overview.html" class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">Overview</a>
+                <a href="column-easy.html" class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">Level 1</a>
+                <a href="column.html" class="px-2.5 py-1.5 rounded-lg border border-indigo-300 bg-indigo-50 text-indigo-800">Level 2</a>
+                <a href="column-hard.html" class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">Level 3</a>
+            </nav>
         </div>
     </header>
 
@@ -65,12 +77,26 @@
         <!-- ================= SECTION: Interactive Schema Builder ================= -->
         <section id="section-2" class="space-y-5">
 
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                <h2 class="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-image text-indigo-600"></i> Scenario
+                </h2>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    Instagram stores <b>users</b> and the <b>posts</b> they share. Each post is written by exactly one user.
+                    Drag every attribute into the correct table, then pick its key role.
+                    Hint: the posts table needs a foreign key that points back to the user who created the post.
+                </p>
+            </div>
+
+            <div id="validation-report" class="hidden rounded-2xl p-5 border transition-all">
+            </div>
+
             <!-- Column Pool (Unassigned Attributes) with Integrated Buttons -->
             <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                 <div class="flex flex-wrap items-center justify-between gap-3 mb-3.5">
                     <div class="flex items-center gap-2.5">
-                        <h3 class="text-sm sm:text-base font-bold uppercase tracking-wider text-slate-800 flex items-center gap-2">
-                            <i class="fa-solid fa-boxes-stacked text-indigo-600 text-lg"></i> Unassigned Data Attributes Pool
+                        <h3 class="text-sm sm:text-base font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-boxes-stacked text-indigo-600 text-lg"></i> Unassigned data attributes pool
                         </h3>
                         <span id="pool-count" class="text-xs font-mono font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-lg">8 attributes remaining</span>
                     </div>
@@ -79,32 +105,27 @@
                         <button onclick="resetSchemaBuilder()" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 border border-slate-300 transition flex items-center gap-1.5 shadow-xs">
                             <i class="fa-solid fa-rotate-left text-xs"></i> Reset
                         </button>
-                        <button onclick="validateSchema()" class="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-xs font-bold text-white shadow-sm transition flex items-center gap-1.5">
+                        <button onclick="validateSchema()" class="px-4 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-xs font-bold text-emerald-800 border border-emerald-200 transition flex items-center gap-1.5">
                             <i class="fa-solid fa-check-circle text-sm"></i> Validate Schema
                         </button>
                     </div>
                 </div>
-                <div id="attributes-pool" class="flex flex-wrap gap-2.5 min-h-[56px] p-3.5 bg-slate-50/80 border border-slate-200 rounded-xl items-center">
+                <div id="attributes-pool" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDropToPool(event)" class="flex flex-wrap gap-2.5 min-h-[56px] p-3.5 bg-slate-50/80 border border-slate-200 rounded-xl items-center">
                     <!-- Dynamic draggable attribute chips -->
                 </div>
-            </div>
-
-            <!-- Validation Results Report -->
-            <div id="validation-report" class="hidden rounded-2xl p-5 border transition-all">
-                <!-- Dynamic feedback message -->
             </div>
 
             <!-- Target Tables Grid (4 slots per table) -->
             <div class="grid md:grid-cols-2 gap-5">
                 <!-- Table 1: Users -->
                 <div class="table-card bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col shadow-sm">
-                    <div class="bg-slate-100/90 border-b border-slate-200 p-3.5 sm:p-4 flex items-center justify-between">
+                    <div class="bg-indigo-50/70 border-b border-indigo-100 p-3.5 sm:p-4 flex items-center justify-between">
                         <div class="flex items-center gap-2.5">
-                            <i class="fa-solid fa-users text-slate-700 text-lg"></i>
+                            <i class="fa-solid fa-users text-indigo-400 text-lg"></i>
                             <span class="font-bold text-base sm:text-lg text-slate-800">Users Table</span>
                             <span class="text-xs text-slate-500 font-medium">(4 Columns)</span>
                         </div>
-                        <span class="text-xs bg-slate-200/80 text-slate-700 px-2.5 py-1 rounded-lg font-mono font-medium border border-slate-300/60">Entity: User Profile</span>
+                        <span class="text-xs bg-white/80 text-indigo-500 px-2.5 py-1 rounded-lg font-mono font-medium border border-indigo-100">Entity: User Profile</span>
                     </div>
                     <div id="table-drop-users" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'users')" class="p-3.5 sm:p-4 flex-1 space-y-3 min-h-[300px] transition-colors border-2 border-dashed border-transparent">
                         <!-- 4 Slot cards rendered via JS -->
@@ -113,13 +134,13 @@
 
                 <!-- Table 2: Posts -->
                 <div class="table-card bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col shadow-sm">
-                    <div class="bg-slate-100/90 border-b border-slate-200 p-3.5 sm:p-4 flex items-center justify-between">
+                    <div class="bg-indigo-50/70 border-b border-indigo-100 p-3.5 sm:p-4 flex items-center justify-between">
                         <div class="flex items-center gap-2.5">
-                            <i class="fa-solid fa-image text-slate-700 text-lg"></i>
+                            <i class="fa-solid fa-image text-indigo-400 text-lg"></i>
                             <span class="font-bold text-base sm:text-lg text-slate-800">Posts Table</span>
                             <span class="text-xs text-slate-500 font-medium">(4 Columns)</span>
                         </div>
-                        <span class="text-xs bg-slate-200/80 text-slate-700 px-2.5 py-1 rounded-lg font-mono font-medium border border-slate-300/60">Entity: Media Content</span>
+                        <span class="text-xs bg-white/80 text-indigo-500 px-2.5 py-1 rounded-lg font-mono font-medium border border-indigo-100">Entity: Media Content</span>
                     </div>
                     <div id="table-drop-posts" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'posts')" class="p-3.5 sm:p-4 flex-1 space-y-3 min-h-[300px] transition-colors border-2 border-dashed border-transparent">
                         <!-- 4 Slot cards rendered via JS -->
@@ -132,10 +153,10 @@
 
     <!-- Footer -->
     <footer class="bg-white border-t border-slate-200/80 text-center py-4 text-xs sm:text-sm text-slate-500 font-medium">
-        IG Database Architect · Interactive Database Engineering Course
+        Instagram Database Architect · Level 2 Practice Task
     </footer>
 
-    <!-- JavaScript Logic -->
+    <script src="column-progress.js"></script>
     <script>
         // Attributes Master Definition - Shuffled & Mixed Order
         const initialAttributes = [
@@ -149,14 +170,25 @@
             { id: 'attr-4', name: 'email', hint: 'User contact email', targetTable: 'users', correctType: 'VARCHAR', correctKey: 'DATA' }
         ];
 
-        // State tracking for schema builder
-        let schemaState = {
-            pool: [...initialAttributes],
-            tables: {
-                users: [],
-                posts: []
-            }
-        };
+        const LEVEL_ID = 2;
+
+        function freshState() {
+            return {
+                pool: initialAttributes.map(a => ({ ...a, selectedKey: '' })),
+                tables: { users: [], posts: [] }
+            };
+        }
+
+        let schemaState = freshState();
+        const savedState = window.ColumnProgress
+            ? window.ColumnProgress.hydrate(window.ColumnProgress.getLevel(LEVEL_ID).schema, initialAttributes, ['users', 'posts'])
+            : null;
+        if (savedState) schemaState = savedState;
+
+        function persistProgress(extra) {
+            if (!window.ColumnProgress) return;
+            window.ColumnProgress.persist(LEVEL_ID, schemaState, extra);
+        }
 
         // Initialize App
         document.addEventListener('DOMContentLoaded', () => {
@@ -176,7 +208,7 @@
             }
 
             poolEl.innerHTML = schemaState.pool.map(attr => `
-                <div id="${attr.id}" draggable="true" ondragstart="handleDragStart(event, '${attr.id}')"
+                <div id="${attr.id}" draggable="true" ondragstart="handleDragStart(event, '${attr.id}')" ondragend="handleDragEnd()"
                      class="bg-white hover:bg-slate-50 border border-slate-300 hover:border-indigo-400 rounded-xl px-3.5 py-2 cursor-grab active:cursor-grabbing flex items-center justify-center shadow-sm transition text-sm font-mono font-bold text-slate-800">
                     ${attr.name}
                 </div>
@@ -194,61 +226,27 @@
                     if (item) {
                         const isPK = item.selectedKey === 'Primary Key';
                         const isFK = item.selectedKey === 'Foreign Key';
-                        const isData = item.selectedKey === 'DATA';
-
-                        const isInt = item.selectedType === 'INTEGER';
-                        const isVarchar = item.selectedType === 'VARCHAR';
-                        const isText = item.selectedType === 'TEXT';
 
                         slotsHTML += `
-                        <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3 shadow-sm">
+                        <div draggable="true" ondragstart="handleDragStart(event, '${item.id}')" ondragend="handleDragEnd()" class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3 shadow-sm cursor-grab active:cursor-grabbing">
                             <div class="flex items-center justify-between">
                                 <span class="font-mono font-bold text-sm text-slate-800 flex items-center gap-2">
                                     <span class="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200 font-sans font-semibold">Column ${i + 1}</span>
                                     <span class="text-indigo-900 text-sm sm:text-base font-bold">${item.name}</span>
                                 </span>
-                                <button onclick="returnToPool('${item.id}', '${tableName}')" class="text-slate-400 hover:text-slate-700 text-base px-1 transition" title="Remove from slot">
-                                    <i class="fa-solid fa-xmark"></i>
-                                </button>
                             </div>
                             
-                            <div class="flex flex-col gap-2.5 text-xs pt-0.5">
-                                <!-- Data Type Selection Chips (Row 1 - Bold Choice Labels) -->
-                                <div>
-                                    <label class="text-xs font-bold text-slate-700 block mb-1 font-sans uppercase tracking-wide">Data Type:</label>
-                                    <div class="flex items-center gap-1.5">
-                                        <button type="button" onclick="setDataType('${item.id}', '${tableName}', 'INTEGER')"
-                                                class="flex-1 py-1.5 rounded-lg text-xs font-mono font-extrabold tracking-wider transition border ${isInt ? 'bg-indigo-700 text-white border-indigo-700 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}">
-                                            INT
-                                        </button>
-                                        <button type="button" onclick="setDataType('${item.id}', '${tableName}', 'VARCHAR')"
-                                                class="flex-1 py-1.5 rounded-lg text-xs font-mono font-extrabold tracking-wider transition border ${isVarchar ? 'bg-indigo-700 text-white border-indigo-700 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}">
-                                            VARCHAR
-                                        </button>
-                                        <button type="button" onclick="setDataType('${item.id}', '${tableName}', 'TEXT')"
-                                                class="flex-1 py-1.5 rounded-lg text-xs font-mono font-extrabold tracking-wider transition border ${isText ? 'bg-indigo-700 text-white border-indigo-700 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}">
-                                            TEXT
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <!-- Key Role Buttons (Row 2: Primary Key / Foreign Key / None) -->
-                                <div>
-                                    <label class="text-xs font-bold text-slate-700 block mb-1 font-sans uppercase tracking-wide">Key Role:</label>
-                                    <div class="flex items-center gap-1.5">
-                                        <button type="button" onclick="setKeyRole('${item.id}', '${tableName}', 'Primary Key')"
-                                                class="flex-1 py-1.5 rounded-lg text-xs font-bold font-sans transition border ${isPK ? 'bg-amber-700 text-white border-amber-700 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}">
-                                            Primary Key
-                                        </button>
-                                        <button type="button" onclick="setKeyRole('${item.id}', '${tableName}', 'Foreign Key')"
-                                                class="flex-1 py-1.5 rounded-lg text-xs font-bold font-sans transition border ${isFK ? 'bg-stone-700 text-white border-stone-700 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}">
-                                            Foreign Key
-                                        </button>
-                                        <button type="button" onclick="setKeyRole('${item.id}', '${tableName}', 'DATA')"
-                                                class="flex-1 py-1.5 rounded-lg text-xs font-bold font-sans transition border ${isData ? 'bg-slate-600 text-white border-slate-600 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}">
-                                            None
-                                        </button>
-                                    </div>
+                            <div class="text-xs pt-0.5">
+                                <label class="text-xs font-bold text-slate-700 block mb-1 font-sans">Key role:</label>
+                                <div class="flex items-center gap-1.5">
+                                    <button type="button" draggable="false" onmousedown="event.stopPropagation()" onclick="setKeyRole('${item.id}', '${tableName}', 'Primary Key')"
+                                            class="flex-1 py-1.5 rounded-lg text-xs font-bold font-sans transition border cursor-pointer ${isPK ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-indigo-50/50 text-slate-600 border-indigo-100 hover:bg-indigo-50'}">
+                                        Primary Key
+                                    </button>
+                                    <button type="button" draggable="false" onmousedown="event.stopPropagation()" onclick="setKeyRole('${item.id}', '${tableName}', 'Foreign Key')"
+                                            class="flex-1 py-1.5 rounded-lg text-xs font-bold font-sans transition border cursor-pointer ${isFK ? 'bg-rose-100 text-rose-800 border-rose-200' : 'bg-indigo-50/50 text-slate-600 border-indigo-100 hover:bg-indigo-50'}">
+                                        Foreign Key
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -272,8 +270,43 @@
         }
 
         // Drag and Drop Event Listeners
+        function markDropZones(on) {
+            document.querySelectorAll('#attributes-pool, .table-card, [id^="table-drop-"]').forEach((el) => {
+                el.classList.toggle('drop-ready', on);
+                if (!on) el.classList.remove('drag-over');
+            });
+        }
+
         function handleDragStart(e, attrId) {
+            e.stopPropagation();
             e.dataTransfer.setData('text/plain', attrId);
+            e.dataTransfer.effectAllowed = 'move';
+            e.currentTarget.classList.add('dragging');
+            markDropZones(true);
+            const src = e.currentTarget;
+            const ghost = src.cloneNode(true);
+            ghost.style.cssText = `position:absolute;top:-9999px;left:0;opacity:1;width:${src.offsetWidth}px;pointer-events:none;`;
+            document.body.appendChild(ghost);
+            e.dataTransfer.setDragImage(ghost, e.offsetX, e.offsetY);
+            setTimeout(() => ghost.remove(), 0);
+        }
+
+        function handleDragEnd() {
+            document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging'));
+            markDropZones(false);
+        }
+
+        function handleDropToPool(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            const attrId = e.dataTransfer.getData('text/plain');
+            if (!attrId) return;
+            for (const t of ['users', 'posts']) {
+                if (schemaState.tables[t].some(a => a.id === attrId)) {
+                    returnToPool(attrId, t);
+                    return;
+                }
+            }
         }
 
         function handleDragOver(e) {
@@ -282,6 +315,7 @@
         }
 
         function handleDragLeave(e) {
+            if (e.currentTarget.contains(e.relatedTarget)) return;
             e.currentTarget.classList.remove('drag-over');
         }
 
@@ -302,7 +336,6 @@
             const poolIdx = schemaState.pool.findIndex(a => a.id === attrId);
             if (poolIdx !== -1) {
                 const item = schemaState.pool.splice(poolIdx, 1)[0];
-                item.selectedType = item.selectedType || '';
                 item.selectedKey = item.selectedKey || '';
                 schemaState.tables[targetTable].push(item);
             } else {
@@ -323,6 +356,7 @@
             }
             renderPool();
             renderTables();
+            persistProgress();
         }
 
         function returnToPool(attrId, sourceTable) {
@@ -333,30 +367,34 @@
             }
             renderPool();
             renderTables();
-        }
-
-        function setDataType(attrId, tableName, typeValue) {
-            const item = schemaState.tables[tableName].find(a => a.id === attrId);
-            if (item) {
-                item.selectedType = typeValue;
-                renderTables();
-            }
+            persistProgress();
         }
 
         function setKeyRole(attrId, tableName, role) {
             const item = schemaState.tables[tableName].find(a => a.id === attrId);
             if (item) {
-                item.selectedKey = role;
+                item.selectedKey = item.selectedKey === role ? '' : role;
                 renderTables();
+                persistProgress();
             }
         }
 
+        function selectedKeyCode(attr) {
+            if (attr.selectedKey === 'Primary Key' || attr.selectedKey === 'PK') return 'PK';
+            if (attr.selectedKey === 'Foreign Key' || attr.selectedKey === 'FK') return 'FK';
+            return 'DATA';
+        }
+
+        function keyLabel(code) {
+            if (code === 'PK') return 'Primary Key';
+            if (code === 'FK') return 'Foreign Key';
+            return 'no key';
+        }
+
         function resetSchemaBuilder() {
-            schemaState = {
-                pool: initialAttributes.map(a => ({ ...a, selectedType: '', selectedKey: '' })),
-                tables: { users: [], posts: [] }
-            };
+            schemaState = freshState();
             document.getElementById('validation-report').classList.add('hidden');
+            persistProgress({ reset: true });
             renderPool();
             renderTables();
         }
@@ -374,36 +412,28 @@
                 errors.push(`There are still <b>${schemaState.pool.length}</b> unassigned attribute(s) sitting in the pool.`);
             }
 
-            // Check each table's attributes, types, and keys
+            // Check each table's attributes and keys
             ['users', 'posts'].forEach(tableName => {
                 const items = schemaState.tables[tableName];
                 totalPlaced += items.length;
 
                 if (items.length < 4) {
-                    errors.push(`The <b>${tableName.toUpperCase()}</b> table only has ${items.length}/4 slots filled.`);
+                    errors.push(`The <b>${tableName}</b> table only has ${items.length}/4 slots filled.`);
                 }
 
                 items.forEach(attr => {
                     if (attr.targetTable !== tableName) {
-                        errors.push(`Attribute <span class="font-mono font-bold text-slate-800">${attr.name}</span> is in <b>${tableName.toUpperCase()}</b> table, but belongs in <b>${attr.targetTable.toUpperCase()}</b> table.`);
+                        errors.push(`Attribute <span class="font-mono font-bold text-slate-800">${attr.name}</span> is in the <b>${tableName}</b> table, but belongs in the <b>${attr.targetTable}</b> table.`);
                     }
-                    if (!attr.selectedType) {
-                        errors.push(`Attribute <span class="font-mono font-bold text-slate-800">${attr.name}</span> in ${tableName} is missing a Data Type selection.`);
-                    } else if (attr.selectedType !== attr.correctType) {
-                        errors.push(`Attribute <span class="font-mono font-bold text-slate-800">${attr.name}</span> should use data type <b>${attr.correctType}</b> (you selected <i>${attr.selectedType}</i>).`);
-                    }
-                    if (!attr.selectedKey) {
-                        errors.push(`Attribute <span class="font-mono font-bold text-slate-800">${attr.name}</span> in ${tableName} is missing a Key Role selection.`);
-                    } else if (attr.selectedKey !== attr.correctKey) {
-                        const keyLabel = attr.correctKey === 'PK' ? 'Primary Key' : attr.correctKey === 'FK' ? 'Foreign Key' : 'None';
-                        const userLabel = attr.selectedKey === 'PK' ? 'Primary Key' : attr.selectedKey === 'FK' ? 'Foreign Key' : 'None';
-                        errors.push(`Attribute <span class="font-mono font-bold text-slate-800">${attr.name}</span> should be set to <b>${keyLabel}</b> (you selected <i>${userLabel}</i>).`);
+                    const actualKey = selectedKeyCode(attr);
+                    if (actualKey !== attr.correctKey) {
+                        errors.push(`Attribute <span class="font-mono font-bold text-slate-800">${attr.name}</span> should be set to <b>${keyLabel(attr.correctKey)}</b> (you selected <i>${keyLabel(actualKey)}</i>).`);
                     }
                 });
             });
 
             if (errors.length === 0 && totalPlaced === initialAttributes.length) {
-                // PERFECT SCHEMA
+                persistProgress({ completed: true });
                 reportEl.className = "rounded-2xl p-6 bg-emerald-50/90 border border-emerald-300/80 text-emerald-950 shadow-sm space-y-3";
                 reportEl.innerHTML = `
                     <div class="flex items-center gap-3.5">
@@ -412,13 +442,16 @@
                         </div>
                         <div>
                             <h3 class="font-bold text-lg text-emerald-950">Outstanding Architecture Design! 🎉</h3>
-                            <p class="text-sm text-emerald-800">All entities, data types (INTEGER, VARCHAR, TEXT), Primary Keys, and Foreign Keys are perfectly configured across both tables!</p>
+                            <p class="text-sm text-emerald-800">All entities, Primary Keys, and Foreign Keys are perfectly configured across both tables!</p>
                         </div>
                     </div>
                     <div class="p-3.5 bg-white/90 rounded-xl text-xs space-y-1 font-mono border border-emerald-200 text-emerald-900">
                         <p class="font-bold text-sm">✔ Primary Key & Foreign Key Relationship:</p>
                         <p>• Users.user_id (Primary Key) ↔ Posts.author_user_id (Foreign Key)</p>
                     </div>
+                    <a href="column-hard.html" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs font-bold transition">
+                        Go to Level 3 <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </a>
                 `;
             } else {
                 // ERRORS PRESENT - Using Muted Red Styling
@@ -430,7 +463,7 @@
                         </div>
                         <div>
                             <h3 class="font-bold text-lg text-rose-950">Schema Validation Issues Found (${errors.length})</h3>
-                            <p class="text-sm text-rose-800">Review the feedback points below to adjust your table attributes, key roles, and data types:</p>
+                            <p class="text-sm text-rose-800">Review the feedback points below to adjust your table attributes and key roles:</p>
                         </div>
                     </div>
                     <ul class="list-disc list-inside text-sm space-y-1.5 pl-2 text-rose-900 font-sans">
