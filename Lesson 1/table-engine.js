@@ -227,9 +227,9 @@
                         </div>
                         <div class="text-xs pt-0.5">
                             <div>
-                                <label class="text-xs font-bold text-slate-700 block mb-1 font-sans">Key role:</label>
+                                <label class="text-sm font-semibold text-slate-700 block mb-1 font-sans">Key role:</label>
                                 <button type="button" draggable="false" onmousedown="event.stopPropagation()" onclick="event.stopPropagation(); setKeyRole('${item.id}', '${table.id}', 'PK')"
-                                        class="px-4 py-1.5 rounded-lg text-xs font-bold font-sans transition border cursor-pointer ${keyChipClass(item.selectedKey === 'PK')}">Primary Key</button>
+                                        class="px-4 py-1.5 rounded-lg text-sm font-semibold font-sans transition border cursor-pointer ${keyChipClass(item.selectedKey === 'PK')}">Primary Key</button>
                             </div>
                         </div>
                     </div>`;

@@ -228,12 +228,12 @@
                         </div>
                         <div class="text-xs pt-0.5">
                             <div>
-                                <label class="text-xs font-bold text-slate-700 block mb-1 font-sans">Key role:</label>
+                                <label class="text-sm font-semibold text-slate-700 block mb-1 font-sans">Key role:</label>
                                 <div class="flex items-center gap-1.5">
                                     <button type="button" draggable="false" onmousedown="event.stopPropagation()" onclick="event.stopPropagation(); setKeyRole('${item.id}', '${table.id}', 'PK')"
-                                            class="flex-1 py-1.5 rounded-lg text-xs font-bold font-sans transition border cursor-pointer ${keyChipClass(item.selectedKey === 'PK', 'PK')}">Primary Key</button>
+                                            class="flex-1 py-1.5 rounded-lg text-sm font-semibold font-sans transition border cursor-pointer ${keyChipClass(item.selectedKey === 'PK', 'PK')}">Primary Key</button>
                                     <button type="button" draggable="false" onmousedown="event.stopPropagation()" onclick="event.stopPropagation(); setKeyRole('${item.id}', '${table.id}', 'FK')"
-                                            class="flex-1 py-1.5 rounded-lg text-xs font-bold font-sans transition border cursor-pointer ${keyChipClass(item.selectedKey === 'FK', 'FK')}">Foreign Key</button>
+                                            class="flex-1 py-1.5 rounded-lg text-sm font-semibold font-sans transition border cursor-pointer ${keyChipClass(item.selectedKey === 'FK', 'FK')}">Foreign Key</button>
                                 </div>
                             </div>
                         </div>

@@ -1,0 +1,86 @@
+/* Shared lesson look: pale surfaces, muted accents, readable type. */
+
+:root {
+    --paper: #f3f5f8;
+    --ink: #3f4b5b;
+    --muted: #6d7888;
+    --line: #e3e7ee;
+    --accent: #7b88c4;
+}
+
+html {
+    font-size: 16px;
+}
+
+body {
+    color: var(--ink);
+    background: var(--paper);
+    line-height: 1.55;
+    font-family: ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+    background: #e6e9f4;
+    color: #354055;
+}
+
+/* Tailwind xs is 12px — too small for lesson copy. */
+.text-xs {
+    font-size: 0.8125rem !important;
+    line-height: 1.45 !important;
+}
+
+.text-sm {
+    font-size: 0.9375rem !important;
+    line-height: 1.5 !important;
+}
+
+.bg-slate-100\/70 {
+    background-color: var(--paper) !important;
+}
+
+.bg-emerald-600 {
+    background-color: #86b89d !important;
+}
+
+.text-indigo-600 {
+    color: #7b88c4 !important;
+}
+
+.text-blue-600,
+.text-blue-500 {
+    color: #6f7fb0 !important;
+}
+
+.bg-blue-600,
+.hover\:bg-blue-700:hover {
+    background-color: #7d8bb8 !important;
+}
+
+.text-green-600 {
+    color: #4f8f73 !important;
+}
+
+.text-red-500 {
+    color: #c07a82 !important;
+}
+
+.font-black {
+    font-weight: 700 !important;
+}
+
+.dragging {
+    border-color: #8b95c9 !important;
+    box-shadow: 0 0 0 2px #c5cbe8;
+}
+
+.drop-ready {
+    border-color: #c5cbe8 !important;
+}
+
+.drag-over {
+    border-color: #8b95c9 !important;
+    background-color: #eef0f7 !important;
+    box-shadow: inset 0 0 0 1px #b8c0e0;
+}

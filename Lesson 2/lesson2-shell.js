@@ -9,14 +9,14 @@
 
     function topClass(on) {
         return on
-            ? 'px-2.5 py-1.5 rounded-lg border border-indigo-300 bg-indigo-50 text-indigo-800'
+            ? 'px-2.5 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700'
             : 'px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50';
     }
 
     function sideClass(on) {
         return on
-            ? 'block px-3 py-2 rounded-xl text-sm font-bold border border-indigo-200 bg-indigo-50 text-indigo-800'
-            : 'block px-3 py-2 rounded-xl text-sm font-bold border border-transparent text-slate-600 hover:bg-slate-50';
+            ? 'block px-3 py-2 rounded-xl text-sm font-semibold border border-indigo-200 bg-indigo-50 text-indigo-700'
+            : 'block px-3 py-2 rounded-xl text-sm font-semibold border border-transparent text-slate-600 hover:bg-slate-50';
     }
 
     const header = document.getElementById('lesson-header');
@@ -29,11 +29,11 @@
                         <i class="fa-solid fa-book-open"></i>
                     </div>
                     <div>
-                        <h1 class="font-bold text-xl leading-tight text-slate-800">Lesson 2</h1>
-                        <p class="text-xs text-slate-500 font-medium">Schemas, relationships, and SQL</p>
+                        <h1 class="font-semibold text-lg leading-tight text-slate-700">Lesson 2</h1>
+                        <p class="text-sm text-slate-500 font-medium">Schemas, relationships, and SQL</p>
                     </div>
                 </div>
-                <nav class="ml-auto flex flex-wrap items-center gap-1.5 text-xs font-bold">
+                <nav class="ml-auto flex flex-wrap items-center gap-1.5 text-sm font-semibold">
                     <a href="overview.html" class="${topClass(task === 'overview')}">Overview</a>
                     <a href="column-overview.html" class="${topClass(task === 'schema')}">Task 1: Schema</a>
                     <a href="link-overview.html" class="${topClass(task === 'link')}">Task 2: Relationships</a>

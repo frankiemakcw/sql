@@ -6,6 +6,7 @@
     <title>Lesson 1 — Overview</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="theme.css">
 </head>
 <body data-task="overview" class="bg-slate-100/70 text-slate-800 min-h-screen font-sans antialiased flex flex-col selection:bg-indigo-100 selection:text-indigo-900">
 
@@ -15,9 +16,9 @@
     <main class="flex-1 w-full p-5 space-y-5">
         <div class="max-w-6xl mx-auto space-y-5">
         <section class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-sm">
-            <h2 class="text-lg font-bold text-slate-800">Your Progress</h2>
+            <h2 class="text-lg font-semibold text-slate-700">Your Progress</h2>
             <p id="progress-copy" class="text-sm text-slate-500 mt-1">Complete every task in this lesson.</p>
-            <div class="flex items-center justify-between text-xs font-bold text-slate-600 mt-4 mb-2">
+            <div class="flex items-center justify-between text-sm font-semibold text-slate-600 mt-4 mb-2">
                 <span>Parts completed</span>
                 <span id="progress-count">0 / 3</span>
             </div>
@@ -128,14 +129,14 @@
                                 </div>
                                 <div>
                                     <h3 class="font-bold text-slate-800">${task.title}</h3>
-                                    <p class="text-xs text-slate-500 mt-0.5">${task.progress.detail}</p>
+                                    <p class="text-sm text-slate-500 mt-0.5">${task.progress.detail}</p>
                                 </div>
                             </div>
-                            <span class="shrink-0 text-xs font-bold px-2.5 py-1 rounded-lg border ${meta.chip}">
+                            <span class="shrink-0 text-sm font-semibold px-2.5 py-1 rounded-lg border ${meta.chip}">
                                 <i class="fa-solid ${meta.icon} mr-1"></i>${meta.label}
                             </span>
                         </div>
-                        <p class="text-sm text-slate-600 leading-relaxed">${task.blurb}</p>
+                        <p class="text-base text-slate-600 leading-relaxed">${task.blurb}</p>
                         <a href="${task.href}" class="mt-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-xs font-bold transition">
                             ${action} <i class="fa-solid fa-arrow-right text-xs"></i>
                         </a>

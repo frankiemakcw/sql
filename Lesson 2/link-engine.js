@@ -127,7 +127,7 @@
             const selected = selectedId === table.id;
             return `
                 <button type="button" onclick="selectTable('${table.id}')"
-                    class="min-w-[160px] px-6 py-4 rounded-2xl border shadow-sm text-xl font-bold font-mono transition ${selected ? 'border-indigo-400 bg-indigo-50 text-indigo-800 ring-2 ring-indigo-200' : 'border-slate-200 bg-white text-slate-800 hover:border-indigo-300 hover:bg-indigo-50/50'}">
+                    class="min-w-[160px] px-6 py-4 rounded-2xl border shadow-sm text-lg font-semibold font-mono transition ${selected ? 'border-indigo-300 bg-indigo-50 text-indigo-700 ring-2 ring-indigo-100' : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-200 hover:bg-indigo-50/50'}">
                     ${table.name}
                 </button>`;
         }).join('');
