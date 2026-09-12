@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IG Database Architect - Interactive Database Design</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .table-card {
+            transition: all 0.2s ease-in-out;
+        }
+        .table-card:hover {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+        }
+        .drag-over {
+            border-color: #6366f1 !important;
+            background-color: #eef2ff !important;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-100/70 text-slate-800 min-h-screen font-sans antialiased flex flex-col selection:bg-indigo-100 selection:text-indigo-900">
+
+    <!-- Header Navigation -->
+    <header class="bg-white border-b border-slate-200/80 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-slate-700 flex items-center justify-center text-white text-xl shadow-sm">
+                    <i class="fa-solid fa-database"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-xl leading-tight text-slate-800">
+                        IG Database Architect
+                    </h1>
+                    <p class="text-xs text-slate-500 font-medium">Interactive Relational Database Masterclass</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-1.5 rounded-xl text-xs font-bold">
+                <i class="fa-solid fa-diagram-project"></i> Schema Builder Workspace
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-5 flex flex-col">
+
+        <!-- ================= SECTION: Interactive Schema Builder ================= -->
+        <section id="section-2" class="space-y-5">
+
+            <!-- Column Pool (Unassigned Attributes) with Integrated Buttons -->
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-3.5">
+                    <div class="flex items-center gap-2.5">
+                        <h3 class="text-sm sm:text-base font-bold uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-boxes-stacked text-indigo-600 text-lg"></i> Unassigned Data Attributes Pool
+                        </h3>
+                        <span id="pool-count" class="text-xs font-mono font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-lg">8 attributes remaining</span>
+                    </div>
+                    <!-- Action Buttons -->
+                    <div class="flex items-center gap-2.5">
+                        <button onclick="resetSchemaBuilder()" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 border border-slate-300 transition flex items-center gap-1.5 shadow-xs">
+                            <i class="fa-solid fa-rotate-left text-xs"></i> Reset
+                        </button>
+                        <button onclick="validateSchema()" class="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-xs font-bold text-white shadow-sm transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-check-circle text-sm"></i> Validate Schema
+                        </button>
+                    </div>
+                </div>
+                <div id="attributes-pool" class="flex flex-wrap gap-2.5 min-h-[56px] p-3.5 bg-slate-50/80 border border-slate-200 rounded-xl items-center">
+                    <!-- Dynamic draggable attribute chips -->
+                </div>
+            </div>
+
+            <!-- Validation Results Report -->
+            <div id="validation-report" class="hidden rounded-2xl p-5 border transition-all">
+                <!-- Dynamic feedback message -->
+            </div>
+
+            <!-- Target Tables Grid (4 slots per table) -->
+            <div class="grid md:grid-cols-2 gap-5">
+                <!-- Table 1: Users -->
+                <div class="table-card bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col shadow-sm">
+                    <div class="bg-slate-100/90 border-b border-slate-200 p-3.5 sm:p-4 flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <i class="fa-solid fa-users text-slate-700 text-lg"></i>
+                            <span class="font-bold text-base sm:text-lg text-slate-800">Users Table</span>
+                            <span class="text-xs text-slate-500 font-medium">(4 Columns)</span>
+                        </div>
+                        <span class="text-xs bg-slate-200/80 text-slate-700 px-2.5 py-1 rounded-lg font-mono font-medium border border-slate-300/60">Entity: User Profile</span>
+                    </div>
+                    <div id="table-drop-users" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'users')" class="p-3.5 sm:p-4 flex-1 space-y-3 min-h-[300px] transition-colors border-2 border-dashed border-transparent">
+                        <!-- 4 Slot cards rendered via JS -->
+                    </div>
+                </div>
+
+                <!-- Table 2: Posts -->
+                <div class="table-card bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col shadow-sm">
+                    <div class="bg-slate-100/90 border-b border-slate-200 p-3.5 sm:p-4 flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <i class="fa-solid fa-image text-slate-700 text-lg"></i>
+                            <span class="font-bold text-base sm:text-lg text-slate-800">Posts Table</span>
+                            <span class="text-xs text-slate-500 font-medium">(4 Columns)</span>
+                        </div>
+                        <span class="text-xs bg-slate-200/80 text-slate-700 px-2.5 py-1 rounded-lg font-mono font-medium border border-slate-300/60">Entity: Media Content</span>
+                    </div>
+                    <div id="table-drop-posts" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'posts')" class="p-3.5 sm:p-4 flex-1 space-y-3 min-h-[300px] transition-colors border-2 border-dashed border-transparent">
+                        <!-- 4 Slot cards rendered via JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200/80 text-center py-4 text-xs sm:text-sm text-slate-500 font-medium">
+        IG Database Architect · Interactive Database Engineering Course
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Attributes Master Definition - Shuffled & Mixed Order
+        const initialAttributes = [
+            { id: 'attr-6', name: 'image_url', hint: 'Image file link', targetTable: 'posts', correctType: 'VARCHAR', correctKey: 'DATA' },
+            { id: 'attr-1', name: 'user_id', hint: 'Unique User ID', targetTable: 'users', correctType: 'INTEGER', correctKey: 'PK' },
+            { id: 'attr-7', name: 'caption', hint: 'Long text description', targetTable: 'posts', correctType: 'TEXT', correctKey: 'DATA' },
+            { id: 'attr-3', name: 'display_name', hint: 'Profile name (e.g. Alex)', targetTable: 'users', correctType: 'VARCHAR', correctKey: 'DATA' },
+            { id: 'attr-5', name: 'post_id', hint: 'Unique Post ID', targetTable: 'posts', correctType: 'INTEGER', correctKey: 'PK' },
+            { id: 'attr-2', name: 'username', hint: 'Unique handle (e.g. alex_123)', targetTable: 'users', correctType: 'VARCHAR', correctKey: 'DATA' },
+            { id: 'attr-8', name: 'author_user_id', hint: 'FK pointing to post author', targetTable: 'posts', correctType: 'INTEGER', correctKey: 'FK' },
+            { id: 'attr-4', name: 'email', hint: 'User contact email', targetTable: 'users', correctType: 'VARCHAR', correctKey: 'DATA' }
+        ];
+
+        // State tracking for schema builder
+        let schemaState = {
+            pool: [...initialAttributes],
+            tables: {
+                users: [],
+                posts: []
+            }
+        };
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            renderPool();
+            renderTables();
+        });
+
+        function renderPool() {
+            const poolEl = document.getElementById('attributes-pool');
+            const countEl = document.getElementById('pool-count');
+
+            countEl.innerText = `${schemaState.pool.length} attribute(s) unassigned`;
+
+            if (schemaState.pool.length === 0) {
+                poolEl.innerHTML = `<span class="text-sm text-slate-500 italic py-1 font-sans font-medium">All attributes assigned! Click "Validate Schema" above to test your layout.</span>`;
+                return;
+            }
+
+            poolEl.innerHTML = schemaState.pool.map(attr => `
+                <div id="${attr.id}" draggable="true" ondragstart="handleDragStart(event, '${attr.id}')"
+                     class="bg-white hover:bg-slate-50 border border-slate-300 hover:border-indigo-400 rounded-xl px-3.5 py-2 cursor-grab active:cursor-grabbing flex items-center justify-center shadow-sm transition text-sm font-mono font-bold text-slate-800">
+                    ${attr.name}
+                </div>
+            `).join('');
+        }
+
+        function renderTables() {
+            ['users', 'posts'].forEach(tableName => {
+                const dropEl = document.getElementById(`table-drop-${tableName}`);
+                const items = schemaState.tables[tableName];
+                
+                let slotsHTML = '';
+                for (let i = 0; i < 4; i++) {
+                    const item = items[i];
+                    if (item) {
+                        const isPK = item.selectedKey === 'Primary Key';
+                        const isFK = item.selectedKey === 'Foreign Key';
+                        const isData = item.selectedKey === 'DATA';
+
+                        const isInt = item.selectedType === 'INTEGER';
+                        const isVarchar = item.selectedType === 'VARCHAR';
+                        const isText = item.selectedType === 'TEXT';
+
+                        slotsHTML += `
+                        <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <span class="font-mono font-bold text-sm text-slate-800 flex items-center gap-2">
+                                    <span class="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200 font-sans font-semibold">Column ${i + 1}</span>
+                                    <span class="text-indigo-900 text-sm sm:text-base font-bold">${item.name}</span>
+                                </span>
+                                <button onclick="returnToPool('${item.id}', '${tableName}')" class="text-slate-400 hover:text-slate-700 text-base px-1 transition" title="Remove from slot">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="flex flex-col gap-2.5 text-xs pt-0.5">
+                                <!-- Data Type Selection Chips (Row 1 - Bold Choice Labels) -->
+                                <div>
+                                    <label class="text-xs font-bold text-slate-700 block mb-1 font-sans uppercase tracking-wide">Data Type:</label>
+                                    <div class="flex items-center gap-1.5">
+                                        <button type="button" onclick="setDataType('${item.id}', '${tableName}', 'INTEGER')"
+                                                class="flex-1 py-1.5 rounded-lg text-xs font-mono font-extrabold tracking-wider transition border ${isInt ? 'bg-indigo-700 text-white border-indigo-700 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}">
+                                            INT
+                                        </button>
+                                        <button type="button" onclick="setDataType('${item.id}', '${tableName}', 'VARCHAR')"
+                                                class="flex-1 py-1.5 rounded-lg text-xs font-mono font-extrabold tracking-wider transition border ${isVarchar ? 'bg-indigo-700 text-white border-indigo-700 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}">
+                                            VARCHAR
+                                        </button>
+                                        <button type="button" onclick="setDataType('${item.id}', '${tableName}', 'TEXT')"
+                                                class="flex-1 py-1.5 rounded-lg text-xs font-mono font-extrabold tracking-wider transition border ${isText ? 'bg-indigo-700 text-white border-indigo-700 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}">
+                                            TEXT
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Key Role Buttons (Row 2: Primary Key / Foreign Key / None) -->
+                                <div>
+                                    <label class="text-xs font-bold text-slate-700 block mb-1 font-sans uppercase tracking-wide">Key Role:</label>
+                                    <div class="flex items-center gap-1.5">
+                                        <button type="button" onclick="setKeyRole('${item.id}', '${tableName}', 'Primary Key')"
+                                                class="flex-1 py-1.5 rounded-lg text-xs font-bold font-sans transition border ${isPK ? 'bg-amber-700 text-white border-amber-700 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}">
+                                            Primary Key
+                                        </button>
+                                        <button type="button" onclick="setKeyRole('${item.id}', '${tableName}', 'Foreign Key')"
+                                                class="flex-1 py-1.5 rounded-lg text-xs font-bold font-sans transition border ${isFK ? 'bg-stone-700 text-white border-stone-700 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}">
+                                            Foreign Key
+                                        </button>
+                                        <button type="button" onclick="setKeyRole('${item.id}', '${tableName}', 'DATA')"
+                                                class="flex-1 py-1.5 rounded-lg text-xs font-bold font-sans transition border ${isData ? 'bg-slate-600 text-white border-slate-600 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}">
+                                            None
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        `;
+                    } else {
+                        // Empty Slot Placeholder
+                        slotsHTML += `
+                        <div class="border-2 border-dashed border-slate-200 hover:border-slate-300 bg-slate-50/70 rounded-xl p-3.5 flex items-center justify-between text-slate-400 transition min-h-[64px]">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs bg-slate-200/80 text-slate-600 px-2 py-0.5 rounded font-mono font-medium">Column Slot ${i + 1}</span>
+                                <span class="text-xs sm:text-sm italic font-sans text-slate-500">Empty slot (drag or tap attribute here)</span>
+                            </div>
+                            <i class="fa-regular fa-square-plus text-slate-400 text-base"></i>
+                        </div>
+                        `;
+                    }
+                }
+
+                dropEl.innerHTML = slotsHTML;
+            });
+        }
+
+        // Drag and Drop Event Listeners
+        function handleDragStart(e, attrId) {
+            e.dataTransfer.setData('text/plain', attrId);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(e, targetTable) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            const attrId = e.dataTransfer.getData('text/plain');
+            if (attrId) {
+                moveAttrToTable(attrId, targetTable);
+            }
+        }
+
+        function moveAttrToTable(attrId, targetTable) {
+            if (schemaState.tables[targetTable].length >= 4) {
+                return;
+            }
+
+            const poolIdx = schemaState.pool.findIndex(a => a.id === attrId);
+            if (poolIdx !== -1) {
+                const item = schemaState.pool.splice(poolIdx, 1)[0];
+                item.selectedType = item.selectedType || '';
+                item.selectedKey = item.selectedKey || '';
+                schemaState.tables[targetTable].push(item);
+            } else {
+                let sourceTable = null;
+                let itemIdx = -1;
+                for (const t of ['users', 'posts']) {
+                    const idx = schemaState.tables[t].findIndex(a => a.id === attrId);
+                    if (idx !== -1) {
+                        sourceTable = t;
+                        itemIdx = idx;
+                        break;
+                    }
+                }
+                if (sourceTable && sourceTable !== targetTable) {
+                    const item = schemaState.tables[sourceTable].splice(itemIdx, 1)[0];
+                    schemaState.tables[targetTable].push(item);
+                }
+            }
+            renderPool();
+            renderTables();
+        }
+
+        function returnToPool(attrId, sourceTable) {
+            const idx = schemaState.tables[sourceTable].findIndex(a => a.id === attrId);
+            if (idx !== -1) {
+                const item = schemaState.tables[sourceTable].splice(idx, 1)[0];
+                schemaState.pool.push(item);
+            }
+            renderPool();
+            renderTables();
+        }
+
+        function setDataType(attrId, tableName, typeValue) {
+            const item = schemaState.tables[tableName].find(a => a.id === attrId);
+            if (item) {
+                item.selectedType = typeValue;
+                renderTables();
+            }
+        }
+
+        function setKeyRole(attrId, tableName, role) {
+            const item = schemaState.tables[tableName].find(a => a.id === attrId);
+            if (item) {
+                item.selectedKey = role;
+                renderTables();
+            }
+        }
+
+        function resetSchemaBuilder() {
+            schemaState = {
+                pool: initialAttributes.map(a => ({ ...a, selectedType: '', selectedKey: '' })),
+                tables: { users: [], posts: [] }
+            };
+            document.getElementById('validation-report').classList.add('hidden');
+            renderPool();
+            renderTables();
+        }
+
+        // Validation Engine
+        function validateSchema() {
+            const reportEl = document.getElementById('validation-report');
+            reportEl.classList.remove('hidden');
+
+            let errors = [];
+            let totalPlaced = 0;
+
+            // Check if pool is empty
+            if (schemaState.pool.length > 0) {
+                errors.push(`There are still <b>${schemaState.pool.length}</b> unassigned attribute(s) sitting in the pool.`);
+            }
+
+            // Check each table's attributes, types, and keys
+            ['users', 'posts'].forEach(tableName => {
+                const items = schemaState.tables[tableName];
+                totalPlaced += items.length;
+
+                if (items.length < 4) {
+                    errors.push(`The <b>${tableName.toUpperCase()}</b> table only has ${items.length}/4 slots filled.`);
+                }
+
+                items.forEach(attr => {
+                    if (attr.targetTable !== tableName) {
+                        errors.push(`Attribute <span class="font-mono font-bold text-slate-800">${attr.name}</span> is in <b>${tableName.toUpperCase()}</b> table, but belongs in <b>${attr.targetTable.toUpperCase()}</b> table.`);
+                    }
+                    if (!attr.selectedType) {
+                        errors.push(`Attribute <span class="font-mono font-bold text-slate-800">${attr.name}</span> in ${tableName} is missing a Data Type selection.`);
+                    } else if (attr.selectedType !== attr.correctType) {
+                        errors.push(`Attribute <span class="font-mono font-bold text-slate-800">${attr.name}</span> should use data type <b>${attr.correctType}</b> (you selected <i>${attr.selectedType}</i>).`);
+                    }
+                    if (!attr.selectedKey) {
+                        errors.push(`Attribute <span class="font-mono font-bold text-slate-800">${attr.name}</span> in ${tableName} is missing a Key Role selection.`);
+                    } else if (attr.selectedKey !== attr.correctKey) {
+                        const keyLabel = attr.correctKey === 'PK' ? 'Primary Key' : attr.correctKey === 'FK' ? 'Foreign Key' : 'None';
+                        const userLabel = attr.selectedKey === 'PK' ? 'Primary Key' : attr.selectedKey === 'FK' ? 'Foreign Key' : 'None';
+                        errors.push(`Attribute <span class="font-mono font-bold text-slate-800">${attr.name}</span> should be set to <b>${keyLabel}</b> (you selected <i>${userLabel}</i>).`);
+                    }
+                });
+            });
+
+            if (errors.length === 0 && totalPlaced === initialAttributes.length) {
+                // PERFECT SCHEMA
+                reportEl.className = "rounded-2xl p-6 bg-emerald-50/90 border border-emerald-300/80 text-emerald-950 shadow-sm space-y-3";
+                reportEl.innerHTML = `
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-11 h-11 rounded-xl bg-emerald-100 border border-emerald-200 text-emerald-800 flex items-center justify-center text-2xl shadow-sm">
+                            <i class="fa-solid fa-trophy"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg text-emerald-950">Outstanding Architecture Design! 🎉</h3>
+                            <p class="text-sm text-emerald-800">All entities, data types (INTEGER, VARCHAR, TEXT), Primary Keys, and Foreign Keys are perfectly configured across both tables!</p>
+                        </div>
+                    </div>
+                    <div class="p-3.5 bg-white/90 rounded-xl text-xs space-y-1 font-mono border border-emerald-200 text-emerald-900">
+                        <p class="font-bold text-sm">✔ Primary Key & Foreign Key Relationship:</p>
+                        <p>• Users.user_id (Primary Key) ↔ Posts.author_user_id (Foreign Key)</p>
+                    </div>
+                `;
+            } else {
+                // ERRORS PRESENT - Using Muted Red Styling
+                reportEl.className = "rounded-2xl p-6 bg-rose-50/90 border border-rose-200 text-rose-950 shadow-sm space-y-3";
+                reportEl.innerHTML = `
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-11 h-11 rounded-xl bg-rose-100 border border-rose-200 text-rose-800 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg text-rose-950">Schema Validation Issues Found (${errors.length})</h3>
+                            <p class="text-sm text-rose-800">Review the feedback points below to adjust your table attributes, key roles, and data types:</p>
+                        </div>
+                    </div>
+                    <ul class="list-disc list-inside text-sm space-y-1.5 pl-2 text-rose-900 font-sans">
+                        ${errors.slice(0, 5).map(err => `<li>${err}</li>`).join('')}
+                        ${errors.length > 5 ? `<li class="font-bold text-rose-950">...and ${errors.length - 5} more issues to resolve.</li>` : ''}
+                    </ul>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Visualizer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .code-font { font-family: 'Fira Code', 'Consolas', monospace; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        .table-container { border: 1px solid #e2e8f0; border-radius: 8px; overflow: auto; background: white; height: 100%; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+        th { background-color: #f8fafc; color: #64748b; font-weight: 700; text-align: left; padding: 4px 8px; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 5; text-transform: uppercase; font-size: 0.6rem; }
+        td { padding: 4px 8px; border-bottom: 1px solid #f1f5f9; color: #334155; white-space: nowrap; }
+        
+        .task-card { cursor: pointer; transition: all 0.2s; border-left: 4px solid transparent; }
+        .task-card.active { background-color: #eff6ff; border-left-color: #3b82f6; }
+        
+        .status-badge { padding: 2px 8px; border-radius: 99px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+        .status-not-attempted { background-color: #f1f5f9; color: #64748b; }
+        .status-completed { background-color: #dcfce7; color: #166534; }
+        .status-incorrect { background-color: #fee2e2; color: #991b1b; }
+
+        .panel-label { font-size: 9px; font-weight: 800; letter-spacing: 0.05em; margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
+        
+        /* Ensure textarea behavior is strictly plain text */
+        #editor {
+            white-space: pre;
+            overflow-wrap: normal;
+            overflow-x: auto;
+            resize: none;
+            font-variant-ligatures: none;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+    <!-- Header -->
+    <header class="h-14 border-b border-slate-200 flex items-center px-6 justify-between bg-white shadow-sm z-10">
+        <div class="flex items-center gap-2">
+            <div class="bg-blue-600 p-1.5 rounded-lg shadow-blue-200 shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5V19A9 3 0 0 0 21 19V5"></path><path d="M3 12A9 3 0 0 0 21 12"></path></svg>
+            </div>
+            <h1 class="font-bold text-slate-800 text-lg tracking-tight">SQL Visualizer</h1>
+        </div>
+        
+        <nav class="flex bg-slate-100 p-1 rounded-lg">
+            <button id="nav-lab" onclick="switchView('lab')" class="px-4 py-1.5 rounded-md text-sm font-semibold transition-all bg-white shadow-sm text-blue-600">Visualizer</button>
+            <button id="nav-summary" onclick="switchView('summary')" class="px-4 py-1.5 rounded-md text-sm font-semibold transition-all text-slate-500 hover:text-slate-700">Summary Dashboard</button>
+        </nav>
+    </header>
+
+    <!-- Lab View -->
+    <div id="view-lab" class="flex flex-1 overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 border-r border-slate-200 bg-slate-50 flex flex-col">
+            <div class="p-4 border-b border-slate-200 bg-white flex justify-between items-center">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Task List</span>
+            </div>
+            <div id="task-list" class="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar"></div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="flex-1 flex flex-col bg-white overflow-hidden">
+            <!-- Top: Editor & Info -->
+            <div class="p-4 bg-slate-50 border-b border-slate-200 shadow-inner">
+                <div class="flex justify-between items-start mb-3">
+                    <div class="max-w-2xl">
+                        <h2 id="current-task-title" class="text-base font-bold text-slate-800">Select a task</h2>
+                        <p id="current-task-desc" class="text-xs text-slate-600 mt-1 italic">Choose a task from the sidebar to begin your exercise.</p>
+                    </div>
+                    <div id="task-badge" class="hidden status-badge status-not-attempted">Not Attempted</div>
+                </div>
+                
+                <div class="relative group">
+                    <!-- Added autocomplete="off" and autocapitalize="off" to prevent mobile/OS interference -->
+                    <textarea 
+                        id="editor" 
+                        spellcheck="false" 
+                        autocomplete="off"
+                        autocorrect="off"
+                        autocapitalize="off"
+                        oninput="saveCurrentQuery()" 
+                        class="w-full h-28 p-4 rounded-xl border-2 border-slate-200 code-font text-sm shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all outline-none" 
+                        placeholder="SELECT * FROM table..."></textarea>
+                    
+                    <button onclick="checkTask()" class="absolute bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-lg hover:shadow-blue-200 transition-all transform active:scale-95 flex items-center gap-2 text-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        Execute Query
+                    </button>
+                </div>
+                <div id="feedback" class="mt-3 hidden p-3 rounded-lg text-xs font-semibold flex items-center gap-3"></div>
+            </div>
+
+            <!-- Bottom: Three Column Tables -->
+            <div class="flex-1 grid grid-cols-3 gap-3 p-3 bg-white overflow-hidden">
+                
+                <!-- Col 1: Source Reference -->
+                <div id="reference-section" class="flex flex-col min-w-0">
+                    <div class="panel-label text-blue-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                        SOURCE: <span id="ref-table-name" class="font-black">...</span>
+                    </div>
+                    <div id="source-table" class="table-container border-blue-100 custom-scrollbar bg-blue-50/10"></div>
+                </div>
+
+                <!-- Col 2: Expected Output -->
+                <div class="flex flex-col min-w-0">
+                    <div class="panel-label text-emerald-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        EXPECTED RESULT
+                    </div>
+                    <div id="expected-result" class="table-container border-emerald-100 custom-scrollbar bg-emerald-50/10"></div>
+                </div>
+
+                <!-- Col 3: Actual Output -->
+                <div class="flex flex-col min-w-0">
+                    <div class="panel-label text-slate-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                        YOUR RESULT
+                    </div>
+                    <div id="query-result" class="table-container border-slate-200 custom-scrollbar">
+                        <div class="h-full flex items-center justify-center text-slate-300 text-[10px] italic p-4 text-center">
+                            Run your query to see results here.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Summary View -->
+    <div id="view-summary" class="hidden flex-1 overflow-auto p-8 bg-slate-50 custom-scrollbar">
+        <div class="max-w-4xl mx-auto">
+            <div class="mb-8 flex items-end justify-between">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-900">Learning Progress</h2>
+                    <p class="text-slate-500 mt-1 font-medium">Completed tasks are tracked locally in your browser.</p>
+                </div>
+                <div id="overall-score" class="text-4xl font-black text-blue-600">0/35</div>
+            </div>
+            <div class="grid grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
+                    <div class="text-slate-400 text-xs font-bold uppercase mb-1">Completed</div>
+                    <div id="stat-completed" class="text-3xl font-bold text-green-600">0</div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
+                    <div class="text-slate-400 text-xs font-bold uppercase mb-1">Incorrect</div>
+                    <div id="stat-incorrect" class="text-3xl font-bold text-red-500">0</div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
+                    <div class="text-slate-400 text-xs font-bold uppercase mb-1">Remaining</div>
+                    <div id="stat-remaining" class="text-3xl font-bold text-slate-400">35</div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <table class="w-full">
+                    <thead><tr class="border-b border-slate-100"><th class="p-4 text-xs">ID</th><th class="p-4 text-xs text-left">Exercise Title</th><th class="p-4 text-xs text-center">Status</th></tr></thead>
+                    <tbody id="summary-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let db;
+        let activeTaskIdx = 0;
+        const tasks = [
+            { id: "2.1", group: "Task 2", table: "books", title: "All Columns", desc: "Display all columns and all rows from the books table.", sql: "SELECT * FROM books;", status: 'not_attempted' },
+            { id: "2.2", group: "Task 2", table: "books", title: "Specific Columns", desc: "Display only the title and the price of every book.", sql: "SELECT title, price FROM books;", status: 'not_attempted' },
+            { id: "2.3", group: "Task 2", table: "books", title: "Filtering by Author", desc: "Display the title of each book written by 'Sunny Chan'.", sql: "SELECT title FROM books WHERE author = 'Sunny Chan';", status: 'not_attempted' },
+            { id: "2.4", group: "Task 2", table: "books", title: "Exact Match", desc: "Display all the details of the book titled 'Magic Rainbow'.", sql: "SELECT * FROM books WHERE title = 'Magic Rainbow';", status: 'not_attempted' },
+            { id: "2.5", group: "Task 2", table: "books", title: "Price Comparison", desc: "Display the title and the price of each book which has a price less than 35.", sql: "SELECT title, price FROM books WHERE price < 35;", status: 'not_attempted' },
+            { id: "2.6", group: "Task 2", table: "books", title: "Negative Filter", desc: "Display the title and the author of each book which is NOT written by 'Chris Ho'.", sql: "SELECT title, author FROM books WHERE author != 'Chris Ho';", status: 'not_attempted' },
+            { id: "2.7", group: "Task 2", table: "books", title: "Unique Values", desc: "Display all authors in the table (no name should appear twice).", sql: "SELECT DISTINCT author FROM books;", status: 'not_attempted' },
+            { id: "3.1", group: "Task 3", table: "cakes", title: "Weight Filter", desc: "Display the name and the weight of each cake which has a weight greater than 600 g.", sql: "SELECT name, weight FROM cakes WHERE weight > 600;", status: 'not_attempted' },
+            { id: "3.2", group: "Task 3", table: "cakes", title: "Multiple Filters", desc: "Display the details of each cake which has a weight greater than 600 g AND a price lower than $300.", sql: "SELECT * FROM cakes WHERE weight > 600 AND price < 300;", status: 'not_attempted' },
+            { id: "3.3", group: "Task 3", table: "cakes", title: "OR Filter", desc: "Display the name and the price of each cake which is named 'Tiramisu' OR has a price at most $120.", sql: "SELECT name, price FROM cakes WHERE name = 'Tiramisu' OR price <= 120;", status: 'not_attempted' },
+            { id: "3.4", group: "Task 3", table: "cakes", title: "Sort Price ASC", desc: "Display the name and the price of all cakes. Sorted the cakes by price in ascending order (the cheapest cake at the top).", sql: "SELECT name, price FROM cakes ORDER BY price ASC;", status: 'not_attempted' },
+            { id: "3.5", group: "Task 3", table: "cakes", title: "Sort Weight DESC", desc: "Display the name and the weight of all cakes. Sort the cakes by weight in descending order (the heaviest cake at the top).", sql: "SELECT name, weight FROM cakes ORDER BY weight DESC;", status: 'not_attempted' },
+            { id: "3.6", group: "Task 3", table: "cakes", title: "Multiple Sort", desc: "Display the details of all cakes. Sort the cakes by weight in descending order, and then by price in ascending order.", sql: "SELECT * FROM cakes ORDER BY weight DESC, price ASC;", status: 'not_attempted' },
+            { id: "3.7", group: "Task 3", table: "cakes", title: "Where & Sort", desc: "Display the details of each cake which has a price greater than $200 and smaller than $300. Sort the cakes by weight in ascending order.", sql: "SELECT * FROM cakes WHERE price > 200 AND price < 300 ORDER BY weight ASC;", status: 'not_attempted' },
+            { id: "4.1", group: "Task 4", table: "scores", title: "Count All", desc: "Find the number of students in the scores table.", sql: "SELECT COUNT(*) FROM scores;", status: 'not_attempted' },
+            { id: "4.2", group: "Task 4", table: "scores", title: "Count High Chin", desc: "Find the number of students who got higher than 85 in the chin exam.", sql: "SELECT COUNT(*) FROM scores WHERE chin > 85;", status: 'not_attempted' },
+            { id: "4.3", group: "Task 4", table: "scores", title: "AND Count", desc: "Find the number of students who got higher than 85 in the eng exam AND the math exam.", sql: "SELECT COUNT(*) FROM scores WHERE eng > 85 AND math > 85;", status: 'not_attempted' },
+            { id: "4.4", group: "Task 4", table: "scores", title: "Average Scores", desc: "Find the average scores in the chin, eng and math exams.", sql: "SELECT AVG(chin), AVG(eng), AVG(math) FROM scores;", status: 'not_attempted' },
+            { id: "4.5", group: "Task 4", table: "scores", title: "Max Scores", desc: "Find the highest scores in the chin, eng and math exams.", sql: "SELECT MAX(chin), MAX(eng), MAX(math) FROM scores;", status: 'not_attempted' },
+            { id: "4.6", group: "Task 4", table: "scores", title: "Sort Score", desc: "Display the sid and the chin exam score of every student. Sort the data by the chin exam score in descending order (the highest score at the top).", sql: "SELECT sid, chin FROM scores ORDER BY chin DESC;", status: 'not_attempted' },
+            { id: "4.7", group: "Task 4", table: "scores", title: "Class Filter", desc: "Display the sid and the math exam score of 2E student. Sort the data by the math exam score in descending order (the highest score at the top).", sql: "SELECT sid, math FROM scores WHERE class = '2E' ORDER BY math DESC;", status: 'not_attempted' },
+            { id: "4.8", group: "Task 4", table: "scores", title: "Weighted Avg", desc: "Display the sid and the weighted average of each student. Weighted average = (chin × 2 + eng × 2 + math × 1.5) ÷ 5.5", sql: "SELECT sid, (chin * 2 + eng * 2 + math * 1.5) / 5.5 FROM scores;", status: 'not_attempted' },
+            { id: "4.9", group: "Task 4", table: "scores", title: "Group Chin", desc: "Display the class and the average chin exam score of each class.", sql: "SELECT class, AVG(chin) FROM scores GROUP BY class;", status: 'not_attempted' },
+            { id: "4.10", group: "Task 4", table: "scores", title: "Group Eng", desc: "Display the class and the highest eng exam score of each class.", sql: "SELECT class, MAX(eng) FROM scores GROUP BY class;", status: 'not_attempted' },
+            { id: "4.11", group: "Task 4", table: "scores", title: "Group & Sort", desc: "Display the class and the average math exam score of each class. Sort the data by the average math exam score in descending order (Highest average score at the top).", sql: "SELECT class, AVG(math) FROM scores GROUP BY class ORDER BY AVG(math) DESC;", status: 'not_attempted' },
+            { id: "E.1", group: "Wildcards", table: "dictionary", title: "Start 'e' (3L)", desc: "Display every word which has 3 letters and starts with 'e'.", sql: "SELECT word FROM dictionary WHERE word LIKE 'e__';", status: 'not_attempted' },
+            { id: "E.2", group: "Wildcards", table: "dictionary", title: "End 'ar' (3L)", desc: "Display every word which has 3 letters and ends with 'ar'.", sql: "SELECT word FROM dictionary WHERE word LIKE '_ar';", status: 'not_attempted' },
+            { id: "E.3", group: "Wildcards", table: "dictionary", title: "Middle 'ee' (4L)", desc: "Display every word which has 4 letters and has 'ee' in the middle.", sql: "SELECT word FROM dictionary WHERE word LIKE '_ee_';", status: 'not_attempted' },
+            { id: "E.4", group: "Wildcards", table: "dictionary", title: "Start/End (5L)", desc: "Display every word which has 5 letters, starts with 'a' and ends with 't'.", sql: "SELECT word FROM dictionary WHERE word LIKE 'a___t';", status: 'not_attempted' },
+            { id: "E.5", group: "Wildcards", table: "dictionary", title: "Ends with 'a'", desc: "Display every word which ends with 'a'.", sql: "SELECT word FROM dictionary WHERE word LIKE '%a';", status: 'not_attempted' },
+            { id: "E.6", group: "Wildcards", table: "dictionary", title: "Start 'b' End 't'", desc: "Display every word which starts with 'b' and ends with 't'.", sql: "SELECT word FROM dictionary WHERE word LIKE 'b%t';", status: 'not_attempted' },
+            { id: "E.7", group: "Wildcards", table: "dictionary", title: "Double 'b'", desc: "Display every word which includes at least two 'b'.", sql: "SELECT word FROM dictionary WHERE word LIKE '%b%b%';", status: 'not_attempted' },
+            { id: "E.8", group: "Wildcards", table: "dictionary", title: "Start 'y' (4L+)", desc: "Display every word which has at least 4 letters and starts with 'y'.", sql: "SELECT word FROM dictionary WHERE word LIKE 'y___%';", status: 'not_attempted' },
+            { id: "E.9", group: "Wildcards", table: "dictionary", title: "Prefix logic", desc: "Display every word which starts with 'ab' and NOT ends with 'e'.", sql: "SELECT word FROM dictionary WHERE word LIKE 'ab%' AND word NOT LIKE '%e';", status: 'not_attempted' },
+            { id: "E.10", group: "Wildcards", table: "dictionary", title: "Count 'c'", desc: "Find the number of words which include exactly one 'c'.", sql: "SELECT COUNT(*) FROM dictionary WHERE word LIKE '%c%' AND word NOT LIKE '%c%c%';", status: 'not_attempted' }
+        ];
+
+        // --- Persistence Logic ---
+
+        function saveCurrentQuery() {
+            const task = tasks[activeTaskIdx];
+            // Access raw plain text value directly
+            const query = document.getElementById('editor').value;
+            localStorage.setItem(`sql_lab_query_${task.id}`, query);
+        }
+
+        function loadSavedQuery(taskId) {
+            return localStorage.getItem(`sql_lab_query_${taskId}`) || "";
+        }
+
+        function saveProgress() {
+            const progress = tasks.map(t => ({ id: t.id, status: t.status }));
+            localStorage.setItem('sql_lab_progress', JSON.stringify(progress));
+        }
+
+        function loadProgress() {
+            const saved = localStorage.getItem('sql_lab_progress');
+            if (saved) {
+                const progressData = JSON.parse(saved);
+                progressData.forEach(p => {
+                    const task = tasks.find(t => t.id === p.id);
+                    if (task) task.status = p.status;
+                });
+            }
+        }
+
+        // --- Application Logic ---
+
+        async function init() {
+            const SQL = await initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${f}` });
+            db = new SQL.Database();
+            db.run(`
+                CREATE TABLE books ( id INTEGER PRIMARY KEY, title TEXT, author TEXT, price INTEGER );
+                INSERT INTO books VALUES 
+                (1, 'The Happy Little Tree', 'Sunny Chan', 45), (2, 'Sharing is Caring', 'Mary Lee', 38),
+                (3, 'The Brave Little Puppy', 'Sunny Chan', 50), (4, 'Magic Rainbow', 'Chris Ho', 48),
+                (5, 'Helping Hands at School', 'Chris Ho', 35), (6, 'Kindness is a Superpower', 'Chris Ho', 40),
+                (7, 'Dancing Stars at Night', 'Mary Lee', 48), (8, 'Thank You, Teachers', 'Sunny Chan', 30);
+                
+                CREATE TABLE cakes ( id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, weight INTEGER, price INTEGER );
+                INSERT INTO cakes (name, weight, price) VALUES 
+                ('Cheese Cake', 500, 180), ('Strawberry Cake', 600, 220), ('Blueberry Cheese Cake', 450, 150), 
+                ('Mango Cake', 400, 120), ('Matcha Cake', 750, 250), ('Mango Crispy', 800, 280), 
+                ('Tiramisu', 550, 260), ('Coffee Cake', 300, 95), ('Chocolate Cake', 500, 140), 
+                ('Durian Cake', 900, 380), ('Blueberry Cake', 350, 110), ('Black Forest', 400, 130);
+                
+                CREATE TABLE scores ( sid TEXT PRIMARY KEY, class TEXT, chin INTEGER, eng INTEGER, math INTEGER );
+                INSERT INTO scores VALUES 
+                ('S001', '2A', 85, 78, 92), ('S002', '2C', 72, 88, 85), ('S003', '2B', 94, 91, 88),
+                ('S004', '2A', 60, 65, 70), ('S005', '2E', 77, 82, 80), ('S006', '2B', 90, 89, 95),
+                ('S007', '2E', 81, 74, 76), ('S008', '2B', 68, 70, 65), ('S009', '2E', 55, 62, 58),
+                ('S010', '2B', 99, 98, 100), ('S011', '2A', 88, 85, 90), ('S012', '2C', 76, 79, 82),
+                ('S013', '2B', 65, 68, 71), ('S014', '2D', 92, 94, 93), ('S015', '2D', 84, 80, 88),
+                ('S016', '2D', 70, 72, 75), ('S017', '2D', 59, 61, 64), ('S018', '2C', 95, 96, 97),
+                ('S019', '2C', 82, 83, 85), ('S020', '2A', 78, 77, 79);
+                
+                CREATE TABLE dictionary (word TEXT);
+                INSERT INTO dictionary VALUES ('a'), ('ability'), ('able'), ('about'), ('above'), ('accept'), ('according'), ('account'), ('across'), ('act'), ('action'), ('activity'), ('actually'), ('add'), ('address'), ('administration'), ('admit'), ('adult'), ('affect'), ('after'), ('again'), ('against'), ('age'), ('agency'), ('agent'), ('ago'), ('agree'), ('agreement'), ('ahead'), ('air'), ('all'), ('allow'), ('almost'), ('alone'), ('along'), ('already'), ('also'), ('although'), ('always'), ('American'), ('among'), ('amount'), ('analysis'), ('and'), ('animal'), ('another'), ('answer'), ('any'), ('anyone'), ('anything'), ('appear'), ('apply'), ('approach'), ('area'), ('argue'), ('arm'), ('around'), ('arrive'), ('art'), ('article'), ('artist'), ('as'), ('ask'), ('assume'), ('at'), ('attack'), ('attention'), ('attorney'), ('audience'), ('author'), ('authority'), ('available'), ('avoid'), ('away'), ('baby'), ('back'), ('bad'), ('bag'), ('ball'), ('bank'), ('bar'), ('base'), ('be'), ('beat'), ('beautiful'), ('because'), ('become'), ('bed'), ('before'), ('begin'), ('behavior'), ('behind'), ('believe'), ('benefit'), ('best'), ('better'), ('between'), ('beyond'), ('big'), ('bill'), ('billion'), ('bit'), ('black'), ('blood'), ('blue'), ('board'), ('body'), ('book'), ('born'), ('both'), ('box'), ('boy'), ('break'), ('bring'), ('brother'), ('budget'), ('build'), ('building'), ('business'), ('but'), ('buy'), ('by'), ('call'), ('camera'), ('campaign'), ('can'), ('cancer'), ('candidate'), ('capital'), ('car'), ('card'), ('care'), ('career'), ('carry'), ('case'), ('catch'), ('cause'), ('cell'), ('center'), ('central'), ('century'), ('certain'), ('certainly'), ('chair'), ('challenge'), ('chance'), ('change'), ('character'), ('charge'), ('check'), ('child'), ('choice'), ('choose'), ('church'), ('citizen'), ('city'), ('civil'), ('claim'), ('class'), ('clear'), ('clearly'), ('close'), ('coach'), ('cold'), ('collection'), ('college'), ('color'), ('come'), ('commercial'), ('common'), ('community'), ('company'), ('compare'), ('computer'), ('concern'), ('condition'), ('conference'), ('Congress'), ('consider'), ('consumer'), ('contain'), ('continue'), ('control'), ('cost'), ('could'), ('country'), ('couple'), ('course'), ('court'), ('cover'), ('create'), ('crime'), ('cultural'), ('culture'), ('cup'), ('current'), ('customer'), ('cut'), ('dark'), ('data'), ('daughter'), ('day'), ('dead'), ('deal'), ('death'), ('debate'), ('decade'), ('decide'), ('decision'), ('deep'), ('defense'), ('degree'), ('Democrat'), ('democratic'), ('describe'), ('design'), ('despite'), ('detail'), ('determine'), ('develop'), ('development'), ('die'), ('difference'), ('different'), ('difficult'), ('dinner'), ('direction'), ('director'), ('discover'), ('discuss'), ('discussion'), ('disease'), ('do'), ('doctor'), ('dog'), ('door'), ('down'), ('draw'), ('dream'), ('drive'), ('drop'), ('drug'), ('during'), ('each'), ('early'), ('east'), ('easy'), ('eat'), ('economic'), ('economy'), ('edge'), ('education'), ('effect'), ('effort'), ('eight'), ('either'), ('election'), ('else'), ('employee'), ('end'), ('energy'), ('enjoy'), ('enough'), ('enter'), ('entire'), ('environment'), ('environmental'), ('especially'), ('establish'), ('even'), ('evening'), ('event'), ('ever'), ('every'), ('everybody'), ('everyone'), ('everything'), ('evidence'), ('exactly'), ('example'), ('executive'), ('exist'), ('expect'), ('experience'), ('expert'), ('explain'), ('eye'), ('face'), ('fact'), ('factor'), ('fail'), ('fall'), ('family'), ('far'), ('fast'), ('father'), ('fear'), ('federal'), ('feel'), ('feeling'), ('few'), ('field'), ('fight'), ('figure'), ('fill'), ('film'), ('final'), ('finally'), ('financial'), ('find'), ('fine'), ('finger'), ('finish'), ('fire'), ('firm'), ('first'), ('fish'), ('five'), ('floor'), ('fly'), ('focus'), ('follow'), ('food'), ('foot'), ('for'), ('force'), ('foreign'), ('forget'), ('form'), ('former'), ('forward'), ('four'), ('free'), ('friend'), ('from'), ('front'), ('full'), ('fund'), ('future'), ('game'), ('garden'), ('gas'), ('general'), ('generation'), ('get'), ('girl'), ('give'), ('glass'), ('go'), ('goal'), ('good'), ('government'), ('great'), ('green'), ('ground'), ('group'), ('grow'), ('growth'), ('guess'), ('gun'), ('guy'), ('hair'), ('half'), ('hand'), ('hang'), ('happen'), ('happy'), ('hard'), ('have'), ('he'), ('head'), ('health'), ('hear'), ('heart'), ('heat'), ('heavy'), ('help'), ('her'), ('here'), ('herself'), ('high'), ('him'), ('himself'), ('his'), ('history'), ('hit'), ('hold'), ('home'), ('hope'), ('hospital'), ('hot'), ('hotel'), ('hour'), ('house'), ('how'), ('however'), ('huge'), ('human'), ('hundred'), ('husband'), ('I'), ('idea'), ('identify'), ('if'), ('image'), ('imagine'), ('impact'), ('important'), ('improve'), ('in'), ('include'), ('including'), ('increase'), ('indeed'), ('indicate'), ('individual'), ('industry'), ('information'), ('inside'), ('instead'), ('institution'), ('interest'), ('interesting'), ('international'), ('interview'), ('into'), ('investment'), ('involve'), ('issue'), ('it'), ('item'), ('its'), ('itself'), ('job'), ('join'), ('just'), ('keep'), ('key'), ('kid'), ('kill'), ('kind'), ('kitchen'), ('know'), ('knowledge'), ('land'), ('language'), ('large'), ('last'), ('late'), ('later'), ('laugh'), ('law'), ('lawyer'), ('lay'), ('lead'), ('leader'), ('learn'), ('least'), ('leave'), ('left'), ('leg'), ('legal'), ('less'), ('let'), ('letter'), ('level'), ('lie'), ('life'), ('light'), ('like'), ('likely'), ('line'), ('list'), ('listen'), ('little'), ('live'), ('local'), ('long'), ('look'), ('lose'), ('loss'), ('lot'), ('love'), ('low'), ('machine'), ('magazine'), ('main'), ('maintain'), ('major'), ('majority'), ('make'), ('man'), ('manage'), ('management'), ('manager'), ('many'), ('market'), ('marriage'), ('material'), ('matter'), ('may'), ('maybe'), ('me'), ('mean'), ('measure'), ('media'), ('medical'), ('meet'), ('meeting'), ('member'), ('memory'), ('mention'), ('message'), ('method'), ('middle'), ('might'), ('military'), ('million'), ('mind'), ('minute'), ('miss'), ('mission'), ('model'), ('modern'), ('moment'), ('money'), ('month'), ('more'), ('morning'), ('most'), ('mother'), ('mouth'), ('move'), ('movement'), ('movie'), ('Mr'), ('Mrs'), ('much'), ('music'), ('must'), ('my'), ('myself'), ('name'), ('nation'), ('national'), ('natural'), ('nature'), ('near'), ('nearly'), ('necessary'), ('need'), ('network'), ('never'), ('new'), ('news'), ('newspaper'), ('next'), ('nice'), ('night'), ('no'), ('none'), ('nor'), ('north'), ('not'), ('note'), ('nothing'), ('notice'), ('now'), ('n''t'), ('number'), ('occur'), ('of'), ('off'), ('offer'), ('office'), ('officer'), ('official'), ('often'), ('oh'), ('oil'), ('ok'), ('old'), ('on'), ('once'), ('one'), ('only'), ('onto'), ('open'), ('operation'), ('opportunity'), ('option'), ('or'), ('order'), ('organization'), ('other'), ('others'), ('our'), ('out'), ('outside'), ('over'), ('own'), ('owner'), ('page'), ('pain'), ('painting'), ('paper'), ('parent'), ('part'), ('participant'), ('particular'), ('particularly'), ('partner'), ('party'), ('pass'), ('past'), ('patient'), ('pattern'), ('pay'), ('peace'), ('people'), ('per'), ('perform'), ('performance'), ('perhaps'), ('period'), ('person'), ('personal'), ('phone'), ('physical'), ('pick'), ('picture'), ('piece'), ('place'), ('plan'), ('plant'), ('play'), ('player'), ('PM'), ('point'), ('police'), ('policy'), ('political'), ('politics'), ('poor'), ('popular'), ('population'), ('position'), ('positive'), ('possible'), ('power'), ('practice'), ('prepare'), ('present'), ('president'), ('pressure'), ('pretty'), ('prevent'), ('price'), ('private'), ('probably'), ('problem'), ('process'), ('produce'), ('product'), ('production'), ('professional'), ('professor'), ('program'), ('project'), ('property'), ('protect'), ('prove'), ('provide'), ('public'), ('pull'), ('purpose'), ('push'), ('put'), ('quality'), ('question'), ('quickly'), ('quite'), ('race'), ('radio'), ('raise'), ('range'), ('rate'), ('rather'), ('reach'), ('read'), ('ready'), ('real'), ('reality'), ('realize'), ('really'), ('reason'), ('receive'), ('recent'), ('recently'), ('recognize'), ('record'), ('red'), ('reduce'), ('reflect'), ('region'), ('relate'), ('relationship'), ('religious'), ('remain'), ('remember'), ('remove'), ('report'), ('represent'), ('Republican'), ('require'), ('research'), ('resource'), ('respond'), ('response'), ('responsibility'), ('rest'), ('result'), ('return'), ('reveal'), ('rich'), ('right'), ('rise'), ('risk'), ('road'), ('rock'), ('role'), ('room'), ('rule'), ('run'), ('safe'), ('same'), ('save'), ('say'), ('scene'), ('school'), ('science'), ('scientist'), ('score'), ('sea'), ('season'), ('seat'), ('second'), ('section'), ('security'), ('see'), ('seek'), ('seem'), ('sell'), ('send'), ('senior'), ('sense'), ('series'), ('serious'), ('serve'), ('service'), ('set'), ('seven'), ('several'), ('sex'), ('sexual'), ('shake'), ('share'), ('she'), ('shoot'), ('short'), ('shot'), ('should'), ('shoulder'), ('show'), ('side'), ('sign'), ('significant'), ('similar'), ('simple'), ('simply'), ('since'), ('sing'), ('single'), ('sister'), ('sit'), ('site'), ('situation'), ('six'), ('size'), ('skill'), ('skin'), ('small'), ('smile'), ('so'), ('social'), ('society'), ('soldier'), ('some'), ('somebody'), ('someone'), ('something'), ('sometimes'), ('son'), ('song'), ('soon'), ('sort'), ('sound'), ('source'), ('south'), ('southern'), ('space'), ('speak'), ('special'), ('specific'), ('speech'), ('spend'), ('sport'), ('spring'), ('staff'), ('stage'), ('stand'), ('standard'), ('star'), ('start'), ('state'), ('statement'), ('station'), ('stay'), ('step'), ('still'), ('stock'), ('stop'), ('store'), ('story'), ('strategy'), ('street'), ('strong'), ('structure'), ('student'), ('study'), ('stuff'), ('style'), ('subject'), ('success'), ('successful'), ('such'), ('suddenly'), ('suffer'), ('suggest'), ('summer'), ('support'), ('sure'), ('surface'), ('system'), ('table'), ('take'), ('talk'), ('task'), ('tax'), ('teach'), ('teacher'), ('team'), ('technology'), ('television'), ('tell'), ('ten'), ('tend'), ('term'), ('test'), ('than'), ('thank'), ('that'), ('the'), ('their'), ('them'), ('themselves'), ('then'), ('theory'), ('there'), ('these'), ('they'), ('thing'), ('think'), ('third'), ('this'), ('those'), ('though'), ('thought'), ('thousand'), ('threat'), ('three'), ('through'), ('throughout'), ('throw'), ('thus'), ('time'), ('to'), ('today'), ('together'), ('tonight'), ('too'), ('top'), ('total'), ('tough'), ('toward'), ('town'), ('trade'), ('traditional'), ('training'), ('travel'), ('treat'), ('treatment'), ('tree'), ('trial'), ('trip'), ('trouble'), ('true'), ('truth'), ('try'), ('turn'), ('TV'), ('two'), ('type'), ('under'), ('understand'), ('unit'), ('until'), ('up'), ('upon'), ('us'), ('use'), ('usually'), ('value'), ('various'), ('very'), ('victim'), ('view'), ('violence'), ('visit'), ('voice'), ('vote'), ('wait'), ('walk'), ('wall'), ('want'), ('war'), ('watch'), ('water'), ('way'), ('we'), ('weapon'), ('wear'), ('week'), ('weight'), ('well'), ('west'), ('western'), ('what'), ('whatever'), ('when'), ('where'), ('whether'), ('which'), ('while'), ('white'), ('who'), ('whole'), ('whom'), ('whose'), ('why'), ('wide'), ('wife'), ('will'), ('win'), ('wind'), ('window'), ('wish'), ('with'), ('within'), ('without'), ('woman'), ('wonder'), ('word'), ('work'), ('worker'), ('world'), ('worry'), ('would'), ('write'), ('writer'), ('wrong'), ('yard'), ('yeah'), ('year'), ('yes'), ('yet'), ('you'), ('young'), ('your'), ('yourself');
+            `);
+            loadProgress();
+            renderTaskSidebar();
+            loadTask(0);
+        }
+
+        function switchView(view) {
+            const isLab = view === 'lab';
+            document.getElementById('view-lab').classList.toggle('hidden', !isLab);
+            document.getElementById('view-summary').classList.toggle('hidden', isLab);
+            document.getElementById('nav-lab').className = isLab ? "px-4 py-1.5 rounded-md text-sm font-semibold bg-white shadow-sm text-blue-600" : "px-4 py-1.5 rounded-md text-sm font-semibold text-slate-500 hover:text-slate-700";
+            document.getElementById('nav-summary').className = !isLab ? "px-4 py-1.5 rounded-md text-sm font-semibold bg-white shadow-sm text-blue-600" : "px-4 py-1.5 rounded-md text-sm font-semibold text-slate-500 hover:text-slate-700";
+            if (!isLab) renderSummary();
+        }
+
+        function renderTaskSidebar() {
+            const list = document.getElementById('task-list');
+            let currentGroup = "";
+            let html = "";
+            tasks.forEach((t, i) => {
+                if (t.group !== currentGroup) {
+                    currentGroup = t.group;
+                    html += `<div class="mt-4 mb-2 px-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">${currentGroup}</div>`;
+                }
+                const dot = t.status === 'completed' ? 'bg-green-500' : (t.status === 'incorrect' ? 'bg-red-500' : 'bg-slate-300');
+                html += `
+                    <div onclick="loadTask(${i})" id="task-card-${i}" class="task-card p-2 bg-white rounded-lg shadow-sm mb-1 border border-slate-200 ${activeTaskIdx === i ? 'active' : ''}">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-800 truncate">${t.id}. ${t.title}</span>
+                            <div class="w-1.5 h-1.5 rounded-full ${dot}"></div>
+                        </div>
+                    </div>`;
+            });
+            list.innerHTML = html;
+        }
+
+        function loadTask(idx) {
+            activeTaskIdx = idx;
+            const t = tasks[idx];
+            document.getElementById('current-task-title').innerText = `${t.group} - Task ${t.id}: ${t.title}`;
+            document.getElementById('current-task-desc').innerText = t.desc;
+            
+            // Load saved query for this specific task
+            document.getElementById('editor').value = loadSavedQuery(t.id);
+            
+            const badge = document.getElementById('task-badge');
+            badge.classList.remove('hidden');
+            badge.className = `status-badge ${t.status === 'completed' ? 'status-completed' : (t.status === 'incorrect' ? 'status-incorrect' : 'status-not-attempted')}`;
+            badge.innerText = t.status.replace('_', ' ');
+
+            document.getElementById('feedback').classList.add('hidden');
+            document.getElementById('query-result').innerHTML = `<div class="h-full flex items-center justify-center text-slate-300 text-[10px] italic p-4 text-center">Run your query to see results here.</div>`;
+            
+            renderTaskSidebar();
+            updateReferenceTables(t);
+        }
+
+        function updateReferenceTables(task) {
+            const nameSpan = document.getElementById('ref-table-name');
+            nameSpan.innerText = task.table;
+            const srcRes = db.exec(`SELECT * FROM ${task.table}`);
+            document.getElementById('source-table').innerHTML = generateTableHTML(srcRes[0].columns, srcRes[0].values);
+
+            const expRes = db.exec(task.sql);
+            document.getElementById('expected-result').innerHTML = generateTableHTML(expRes[0].columns, expRes[0].values);
+        }
+
+        function checkTask() {
+            const userSql = document.getElementById('editor').value.trim();
+            const feedback = document.getElementById('feedback');
+            const resultBox = document.getElementById('query-result');
+            const task = tasks[activeTaskIdx];
+            if (!userSql) return;
+
+            try {
+                const userRes = db.exec(userSql);
+                const correctRes = db.exec(task.sql);
+                
+                if (userRes.length > 0) {
+                    resultBox.innerHTML = generateTableHTML(userRes[0].columns, userRes[0].values);
+                    
+                    // We only compare the 'values' array so that different column names or aliases don't fail the check
+                    const isCorrect = JSON.stringify(userRes[0].values) === JSON.stringify(correctRes[0].values);
+                    
+                    if (isCorrect) {
+                        task.status = 'completed';
+                        feedback.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>Excellent! The output matches perfectly.</span>`;
+                        feedback.className = "mt-3 p-3 rounded-lg text-xs font-semibold flex bg-green-50 text-green-700 border border-green-200";
+                    } else if (task.status !== 'completed') {
+                        task.status = 'incorrect';
+                        feedback.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> <span>The result does not match the expected output. Try again.</span>`;
+                        feedback.className = "mt-3 p-3 rounded-lg text-xs font-semibold flex bg-red-50 text-red-700 border border-red-200";
+                    }
+                } else {
+                    if (task.status !== 'completed') task.status = 'incorrect';
+                    resultBox.innerHTML = "<div class='h-full flex items-center justify-center text-slate-300 text-[10px] italic p-4'>No rows returned.</div>";
+                }
+            } catch (err) {
+                feedback.innerHTML = `<strong>SQL Error:</strong> ${err.message}`;
+                feedback.className = "mt-3 p-3 rounded-lg text-xs font-mono bg-slate-900 text-red-400 leading-relaxed";
+            }
+            
+            saveProgress();
+            const badge = document.getElementById('task-badge');
+            badge.className = `status-badge ${task.status === 'completed' ? 'status-completed' : (task.status === 'incorrect' ? 'status-incorrect' : 'status-not-attempted')}`;
+            badge.innerText = task.status.replace('_', ' ');
+            renderTaskSidebar();
+        }
+
+        function renderSummary() {
+            const body = document.getElementById('summary-table-body');
+            const completed = tasks.filter(t => t.status === 'completed').length;
+            const incorrect = tasks.filter(t => t.status === 'incorrect').length;
+            const remaining = tasks.filter(t => t.status === 'not_attempted').length;
+            
+            document.getElementById('overall-score').innerText = `${completed}/${tasks.length}`;
+            document.getElementById('stat-completed').innerText = completed;
+            document.getElementById('stat-incorrect').innerText = incorrect;
+            document.getElementById('stat-remaining').innerText = remaining;
+            
+            body.innerHTML = tasks.map(t => {
+                const savedQuery = loadSavedQuery(t.id);
+                const queryHtml = savedQuery 
+                    ? `<div class="mt-2 p-2 bg-slate-100 rounded border border-slate-200 font-mono text-[10px] text-slate-600 whitespace-pre-wrap">${savedQuery}</div>` 
+                    : `<div class="mt-2 text-[10px] italic text-slate-400">No attempt recorded.</div>`;
+                
+                return `
+                <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                    <td class="p-4 text-center font-bold text-slate-400 text-[10px] align-top">${t.id}</td>
+                    <td class="p-4 align-top">
+                        <div class="font-bold text-slate-800 text-sm">${t.title}</div>
+                        <div class="text-[10px] text-slate-500 font-medium">${t.desc}</div>
+                        ${queryHtml}
+                    </td>
+                    <td class="p-4 text-center align-top"><span class="status-badge ${t.status === 'completed' ? 'status-completed' : (t.status === 'incorrect' ? 'status-incorrect' : 'status-not-attempted')}">${t.status.replace('_',' ')}</span></td>
+                </tr>`;
+            }).join('');
+        }
+
+        function generateTableHTML(columns, values) {
+            if (!columns || columns.length === 0) return "<div class='p-4 text-center text-slate-300 text-[10px]'>Empty set.</div>";
+            let html = `<table><thead><tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>`;
+            values.forEach(row => html += `<tr>${row.map(cell => `<td>${cell ?? '<span class="text-slate-300 italic">null</span>'}</td>`).join('')}</tr>`);
+            return html + `</tbody></table>`;
+        }
+        
+        window.onload = init;
+    </script>
+</body>
+</html>

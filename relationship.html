@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🗄️ 數據庫設計大作戰：實體關聯 (ERD) 互動教室</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font (Inter & Noto Sans TC) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            user-select: none;
+        }
+        /* Custom dynamic grid background for canvas */
+        .bg-grid {
+            background-size: 24px 24px;
+            background-image: 
+                linear-gradient(to right, rgba(226, 232, 240, 0.6) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(226, 232, 240, 0.6) 1px, transparent 1px);
+        }
+        /* Card glowing effect when active */
+        .card-shadow {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+        }
+        .card-active {
+            box-shadow: 0 0 0 3px #3b82f6, 0 10px 25px -5px rgba(59, 130, 246, 0.3);
+        }
+        .pulse-warning {
+            animation: pulse-border 1.5s infinite;
+        }
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0px rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0px rgba(239, 68, 68, 0); }
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-800 h-screen flex flex-col overflow-hidden">
+
+    <!-- Top Header / Bar -->
+    <header class="bg-slate-800 border-b border-slate-700 px-6 py-3 flex items-center justify-between text-white shrink-0 z-20">
+        <div class="flex items-center space-x-3">
+            <div class="bg-gradient-to-tr from-blue-600 to-indigo-500 p-2.5 rounded-xl shadow-lg">
+                <i class="fa-solid me-0 fa-database text-xl text-white"></i>
+            </div>
+            <div>
+                <h1 class="font-black text-lg tracking-wide flex items-center gap-2">
+                    數據庫設計大作戰 <span class="bg-blue-500/20 text-blue-400 text-xs px-2 py-0.5 rounded-full border border-blue-500/30 font-medium">ERD & 中間表互動課堂</span>
+                </h1>
+                <p class="text-xs text-slate-400">適合 14 歲初學者的數據庫實體關聯遊戲</p>
+            </div>
+        </div>
+
+        <!-- Level Indicator -->
+        <div class="flex items-center space-x-2 bg-slate-900/80 px-4 py-1.5 rounded-full border border-slate-700">
+            <span class="text-xs text-slate-400 font-medium">當前關卡：</span>
+            <span id="level-badge" class="text-sm font-bold text-amber-400">關卡 1: 一對一與一對多基礎</span>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center space-x-3">
+            <button id="btn-tutorial" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-2 rounded-lg font-medium transition flex items-center gap-1.5">
+                <i class="fa-solid fa-lightbulb text-amber-400"></i> 關卡提示
+            </button>
+            <button id="btn-reset" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-2 rounded-lg font-medium transition text-slate-300">
+                <i class="fa-solid fa-rotate-left mr-1"></i> 重置畫布
+            </button>
+            <button id="btn-check" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-lg font-bold shadow-lg shadow-emerald-900/40 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-circle-check"></i> 驗證數據庫架構
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Playground Workspace -->
+    <div class="flex-1 flex overflow-hidden relative">
+        
+        <!-- Left Sidebar: Entity Cards Toolbox -->
+        <aside class="w-72 bg-slate-800/90 border-r border-slate-700 p-4 flex flex-col justify-between z-10 shadow-2xl backdrop-blur-md">
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                        <i class="fa-solid fa-cubes text-blue-400"></i> 可用實體卡 (Entities)
+                    </h2>
+                    <span class="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">點擊或拖曳</span>
+                </div>
+                <p class="text-xs text-slate-400 mb-4">點擊卡片放入中央畫布，為數據庫建立實體。</p>
+
+                <!-- Entity Cards List Container -->
+                <div id="entity-palette" class="space-y-2.5 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
+                    <!-- Dynamic entity buttons inserted by JS -->
+                </div>
+            </div>
+
+            <!-- Connection Tool Info -->
+            <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-700/80 text-xs text-slate-300 space-y-2">
+                <div class="font-bold text-slate-200 flex items-center justify-between">
+                    <span><i class="fa-solid fa-link text-indigo-400 mr-1"></i> 連線工具說明</span>
+                </div>
+                <p class="text-[11px] text-slate-400 leading-relaxed">
+                    在畫布中點擊實體卡上的 <span class="text-blue-400 font-bold">● 連接點</span> 並拉線到另一個實體，選擇對應的關聯類型（1:1、1:N、N:M）。
+                </p>
+            </div>
+        </aside>
+
+        <!-- Center Interactive Canvas Area -->
+        <main id="canvas-container" class="flex-1 bg-slate-100 relative overflow-hidden bg-grid cursor-crosshair">
+            
+            <!-- SVG Overlay for Rendering Dynamic Dynamic Relationship Lines -->
+            <svg id="svg-canvas" class="absolute inset-0 w-full h-full pointer-events-none z-0">
+                <defs>
+                    <!-- Arrowheads & Markers -->
+                    <marker id="marker-one" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <circle cx="5" cy="5" r="3" fill="#3b82f6" />
+                    </marker>
+                    <marker id="marker-many" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 5 L 0 10 Z" fill="#ec4899" />
+                    </marker>
+                </defs>
+                <g id="connections-group"></g>
+                <path id="active-drag-line" d="" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-dasharray="6,6" class="hidden"></path>
+            </svg>
+
+            <!-- Cards Dropped Canvas Zone -->
+            <div id="canvas-nodes" class="absolute inset-0 z-10 pointer-events-none">
+                <!-- Entity Node Cards render here -->
+            </div>
+
+            <!-- Canvas Hint Overlay when empty -->
+            <div id="empty-canvas-hint" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 pointer-events-none transition-opacity duration-300">
+                <i class="fa-regular fa-hand-pointer text-4xl mb-3 animate-bounce opacity-40"></i>
+                <p class="font-medium text-sm">從左側面板點擊實體卡，開始設計 ERD 圖！</p>
+            </div>
+
+            <!-- Floating Level Objective Banner -->
+            <div class="absolute top-4 left-4 bg-white/95 border border-slate-200/80 backdrop-blur-md px-4 py-3 rounded-2xl shadow-xl max-w-md z-20">
+                <div class="flex items-start gap-3">
+                    <div class="bg-amber-100 text-amber-700 p-2 rounded-xl mt-0.5 shrink-0">
+                        <i class="fa-solid fa-bullseye text-base"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">關卡任務</div>
+                        <div id="level-task-desc" class="text-xs font-semibold text-slate-800 mt-0.5 leading-snug">
+                            請將「學生」與「學生證」建立 1:1 關聯，並將「教師」與「課程」建立 1:N 關聯。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Inspector / Live Table Preview Panel -->
+        <aside class="w-80 bg-slate-800 border-l border-slate-700 flex flex-col z-10 shadow-2xl">
+            <!-- Header Tab -->
+            <div class="px-4 py-3 border-b border-slate-700 bg-slate-800/80 flex items-center justify-between">
+                <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                    <i class="fa-solid fa-table text-emerald-400"></i> 底層資料表模擬視察
+                </h3>
+                <span id="selected-entity-tag" class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">未選擇卡片</span>
+            </div>
+
+            <!-- Inspector Content Area -->
+            <div class="flex-1 p-4 overflow-y-auto space-y-4">
+                
+                <!-- Notice Prompt when nothing selected -->
+                <div id="inspector-placeholder" class="text-center py-10 text-slate-400 space-y-3">
+                    <div class="w-12 h-12 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto text-slate-500">
+                        <i class="fa-solid fa-magnifying-glass text-lg"></i>
+                    </div>
+                    <p class="text-xs">點擊畫布上的任何「實體卡」或「連接線」，即可觀察其在數據庫中的實際欄位結構與 Foreign Key！</p>
+                </div>
+
+                <!-- Entity Inspector Detail (Hidden by default) -->
+                <div id="inspector-detail" class="hidden space-y-4">
+                    <div class="bg-slate-900/80 rounded-xl p-3 border border-slate-700">
+                        <div class="flex items-center justify-between mb-2">
+                            <span id="inspector-title" class="font-bold text-white text-sm">學生 (Student)</span>
+                            <span id="inspector-type" class="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded">基本實體表</span>
+                        </div>
+                        <p id="inspector-desc" class="text-xs text-slate-400">儲存學生的基本個人數據。</p>
+                    </div>
+
+                    <!-- Column Structure Table -->
+                    <div>
+                        <div class="text-xs font-bold text-slate-300 mb-2 flex items-center justify-between">
+                            <span>欄位設計 (Columns)</span>
+                            <span class="text-[10px] text-slate-400"><i class="fa-solid fa-key text-amber-400 mr-1"></i>PK 主鍵 / <i class="fa-solid fa-key text-blue-400 mr-1"></i>FK 外鍵</span>
+                        </div>
+                        <div class="bg-slate-900 rounded-xl overflow-hidden border border-slate-700 text-xs">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-slate-800 text-slate-400 text-[10px] border-b border-slate-700">
+                                    <tr>
+                                        <th class="p-2">欄位名稱</th>
+                                        <th class="p-2">Data Type</th>
+                                        <th class="p-2">鍵 (Key)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inspector-cols-body" class="divide-y divide-slate-800 text-slate-300">
+                                    <!-- Dynamic Columns -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Live Sample Rows Preview -->
+                    <div>
+                        <div class="text-xs font-bold text-slate-300 mb-2">模擬數據記錄 (Sample Rows)</div>
+                        <div id="inspector-rows-container" class="bg-slate-900 rounded-xl p-2 border border-slate-700 overflow-x-auto text-[11px] font-mono text-slate-300">
+                            <!-- Mini Table Preview -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Special Warning Panel for N:M Many to Many Crisis -->
+                <div id="nm-crisis-panel" class="hidden bg-rose-950/60 border border-rose-600/60 rounded-2xl p-4 text-xs text-rose-200 space-y-3 pulse-warning">
+                    <div class="flex items-center gap-2 font-bold text-rose-400 text-sm">
+                        <i class="fa-solid fa-triangle-exclamation text-base"></i> 警告：發現 N:M 多對多危機！
+                    </div>
+                    <p class="leading-relaxed">
+                        你直接在兩個實體間連上了 <span class="font-bold underline text-rose-300">N:M (多對多)</span> 關係！
+                    </p>
+                    <p class="text-slate-300 leading-relaxed">
+                        在真正的關係型數據庫（如 MySQL）中，<span class="text-amber-300 font-semibold">不能直接這樣儲存</span>。因為這會導致一個欄位填入逗號分隔的多筆資料（例如 `學生1` 報名 `社團A, 社團B, 社團C`），造成查詢混亂！
+                    </p>
+                    <div class="bg-slate-900/90 p-2.5 rounded-xl border border-rose-800/50 space-y-2">
+                        <div class="font-bold text-amber-400 flex items-center gap-1">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> 解決方案：加入「中間表」
+                        </div>
+                        <p class="text-[11px] text-slate-400">
+                            請在左側點擊新增 <span class="text-emerald-400 font-bold">中間表 (Junction Table)</span>，將 1 個 N:M 拆解成 2 個 1:N 關係！
+                        </p>
+                        <button id="btn-auto-fix-nm" class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold py-1.5 px-3 rounded-lg shadow transition text-xs mt-1">
+                            一鍵導入「中間表」拆解範例
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- Modal: Select Connection Type (1:1, 1:N, N:M) -->
+    <div id="modal-conn-type" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5 text-white">
+            <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                <h3 class="font-bold text-lg flex items-center gap-2">
+                    <i class="fa-solid fa-route text-blue-400"></i> 設定實體間的關係 (Cardinality)
+                </h3>
+                <button class="btn-close-modal text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <p class="text-xs text-slate-300">
+                請選擇 <span id="conn-from-name" class="font-bold text-blue-400">A</span> 與 <span id="conn-to-name" class="font-bold text-emerald-400">B</span> 之間的實體關係：
+            </p>
+
+            <div class="space-y-3">
+                <!-- 1:1 Option -->
+                <button data-type="1:1" class="btn-select-cardinality w-full bg-slate-700/60 hover:bg-slate-700 border border-slate-600 p-3.5 rounded-xl text-left transition flex items-center justify-between group">
+                    <div>
+                        <div class="font-bold text-sm text-slate-100 group-hover:text-blue-400 flex items-center gap-2">
+                            <span class="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-xs">1 : 1</span> 一對一 (One-to-One)
+                        </div>
+                        <div class="text-[11px] text-slate-400 mt-1">1 個 A 只對應 1 個 B（例如：1 位學生 只有 1 張學生證）</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-slate-500 group-hover:text-white"></i>
+                </button>
+
+                <!-- 1:N Option -->
+                <button data-type="1:N" class="btn-select-cardinality w-full bg-slate-700/60 hover:bg-slate-700 border border-slate-600 p-3.5 rounded-xl text-left transition flex items-center justify-between group">
+                    <div>
+                        <div class="font-bold text-sm text-slate-100 group-hover:text-amber-400 flex items-center gap-2">
+                            <span class="bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded text-xs">1 : N</span> 一對多 (One-to-Many)
+                        </div>
+                        <div class="text-[11px] text-slate-400 mt-1">1 個 A 可以對應多個 B（例如：1 位老師 教導多門課程）</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-slate-500 group-hover:text-white"></i>
+                </button>
+
+                <!-- N:M Option -->
+                <button data-type="N:M" class="btn-select-cardinality w-full bg-slate-700/60 hover:bg-slate-700 border border-slate-600 p-3.5 rounded-xl text-left transition flex items-center justify-between group">
+                    <div>
+                        <div class="font-bold text-sm text-slate-100 group-hover:text-rose-400 flex items-center gap-2">
+                            <span class="bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded text-xs">N : M</span> 多對多 (Many-to-Many)
+                        </div>
+                        <div class="text-[11px] text-slate-400 mt-1">多個 A 對應多個 B（例如：學生 與 社團 / 學生 與 課程）</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-slate-500 group-hover:text-white"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Level Success / Complete -->
+    <div id="modal-success" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-800 border border-emerald-500/40 rounded-3xl p-8 max-w-lg w-full text-center shadow-2xl space-y-6 text-white relative overflow-hidden">
+            <div class="w-20 h-20 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full flex items-center justify-center mx-auto text-3xl shadow-lg shadow-emerald-900/30">
+                <i class="fa-solid fa-trophy animate-bounce"></i>
+            </div>
+
+            <div>
+                <h3 class="text-2xl font-black text-white">太棒了！關卡通關成功！</h3>
+                <p id="success-message" class="text-sm text-slate-300 mt-2 leading-relaxed">
+                    你成功掌握了實體關聯的建立與中間表 (Junction Table) 的運用！
+                </p>
+            </div>
+
+            <div id="success-knowledge-box" class="bg-slate-900/90 p-4 rounded-2xl border border-slate-700 text-xs text-slate-300 text-left space-y-2">
+                <div class="font-bold text-amber-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-graduation-cap text-base"></i> 本關核心考點總結：
+                </div>
+                <ul id="success-points-list" class="list-disc list-inside space-y-1 text-slate-400">
+                    <!-- Dynamic key takeaways -->
+                </ul>
+            </div>
+
+            <button id="btn-next-level" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black py-3 px-6 rounded-xl shadow-lg transition text-sm">
+                進入下一關 <i class="fa-solid fa-arrow-right ml-1"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal: Hint/Tutorial Guide -->
+    <div id="modal-hint" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 text-white">
+            <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                <h3 class="font-bold text-base flex items-center gap-2 text-amber-400">
+                    <i class="fa-solid fa-lightbulb"></i> 關卡提示與解題思維
+                </h3>
+                <button class="btn-close-modal text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div id="hint-content" class="text-xs text-slate-300 space-y-3 leading-relaxed">
+                <!-- Dynamic hint -->
+            </div>
+
+            <button class="btn-close-modal w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded-xl text-xs transition">
+                我知道了，返回畫布
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Global Game State & Level Data Definition
+        const state = {
+            currentLevel: 1,
+            nodes: [],       // Cards currently on canvas: { id, entityKey, x, y }
+            connections: [], // Lines: { id, fromId, toId, type } ('1:1', '1:N', 'N:M')
+            selectedNodeId: null,
+            draggedNodeId: null,
+            dragOffset: { x: 0, y: 0 },
+            connectingFromNodeId: null,
+            activeLinePos: { x1: 0, y1: 0, x2: 0, y2: 0 }
+        };
+
+        // Database Entity Master Dictionary
+        const ENTITY_DICTIONARY = {
+            student: {
+                key: 'student',
+                title: '學生 (Student)',
+                type: 'basic',
+                bgColor: 'bg-blue-600',
+                borderColor: 'border-blue-400',
+                tagColor: 'bg-blue-500/20 text-blue-300',
+                desc: '學校學生基本個人資料。',
+                columns: [
+                    { name: 'student_id', type: 'INT', isPK: true, isFK: false, desc: '學號' },
+                    { name: 'name', type: 'VARCHAR', isPK: false, isFK: false, desc: '姓名' },
+                    { name: 'grade', type: 'INT', isPK: false, isFK: false, desc: '年級' }
+                ],
+                sampleRows: [
+                    { student_id: 101, name: '陳小明', grade: 9 },
+                    { student_id: 102, name: '林美麗', grade: 9 }
+                ]
+            },
+            idcard: {
+                key: 'idcard',
+                title: '學生證 (Student ID Card)',
+                type: 'basic',
+                bgColor: 'bg-sky-600',
+                borderColor: 'border-sky-400',
+                tagColor: 'bg-sky-500/20 text-sky-300',
+                desc: '學生的實體晶片學生證。',
+                columns: [
+                    { name: 'card_id', type: 'VARCHAR', isPK: true, isFK: false, desc: '卡號' },
+                    { name: 'issue_date', type: 'DATE', isPK: false, isFK: false, desc: '發卡日期' },
+                    { name: 'student_id', type: 'INT', isPK: false, isFK: true, desc: '所屬學生 (FK)' }
+                ],
+                sampleRows: [
+                    { card_id: 'C-2026-01', issue_date: '2026-09-01', student_id: 101 },
+                    { card_id: 'C-2026-02', issue_date: '2026-09-01', student_id: 102 }
+                ]
+            },
+            teacher: {
+                key: 'teacher',
+                title: '教師 (Teacher)',
+                type: 'basic',
+                bgColor: 'bg-purple-600',
+                borderColor: 'border-purple-400',
+                tagColor: 'bg-purple-500/20 text-purple-300',
+                desc: '學校教職員基本資料。',
+                columns: [
+                    { name: 'teacher_id', type: 'INT', isPK: true, isFK: false, desc: '教師編號' },
+                    { name: 'name', type: 'VARCHAR', isPK: false, isFK: false, desc: '教師姓名' },
+                    { name: 'subject', type: 'VARCHAR', isPK: false, isFK: false, desc: '專長科目' }
+                ],
+                sampleRows: [
+                    { teacher_id: 1, name: '張主任', subject: '資訊科技' },
+                    { teacher_id: 2, name: '李老師', subject: '數學' }
+                ]
+            },
+            course: {
+                key: 'course',
+                title: '課程 (Course)',
+                type: 'basic',
+                bgColor: 'bg-amber-600',
+                borderColor: 'border-amber-400',
+                tagColor: 'bg-amber-500/20 text-amber-300',
+                desc: '學校開設的學術與技能課程。',
+                columns: [
+                    { name: 'course_id', type: 'INT', isPK: true, isFK: false, desc: '課程代碼' },
+                    { name: 'course_name', type: 'VARCHAR', isPK: false, isFK: false, desc: '課程名稱' },
+                    { name: 'teacher_id', type: 'INT', isPK: false, isFK: true, desc: '授課教師 (FK)' }
+                ],
+                sampleRows: [
+                    { course_id: 501, course_name: 'Python入門', teacher_id: 1 },
+                    { course_id: 502, course_name: '數據庫基礎', teacher_id: 1 }
+                ]
+            },
+            club: {
+                key: 'club',
+                title: '社團 (Club)',
+                type: 'basic',
+                bgColor: 'bg-indigo-600',
+                borderColor: 'border-indigo-400',
+                tagColor: 'bg-indigo-500/20 text-indigo-300',
+                desc: '學生課外興趣社團。',
+                columns: [
+                    { name: 'club_id', type: 'INT', isPK: true, isFK: false, desc: '社團代號' },
+                    { name: 'club_name', type: 'VARCHAR', isPK: false, isFK: false, desc: '社團名稱' },
+                    { name: 'location', type: 'VARCHAR', isPK: false, isFK: false, desc: '活動地點' }
+                ],
+                sampleRows: [
+                    { club_id: 10, club_name: '籃球社', location: '體育館' },
+                    { club_id: 20, club_name: '機器人研究社', location: '創客教室' }
+                ]
+            },
+            // JUNCTION / BRIDGE TABLES
+            club_member: {
+                key: 'club_member',
+                title: '社團成員紀錄 (Club_Member)',
+                type: 'junction',
+                bgColor: 'bg-emerald-600',
+                borderColor: 'border-emerald-400',
+                tagColor: 'bg-emerald-500/20 text-emerald-300',
+                desc: '⭐ 中間表 (Junction Table)：將「學生 N:M 社團」拆解為兩個 1:N！',
+                columns: [
+                    { name: 'id', type: 'INT', isPK: true, isFK: false, desc: '紀錄流水號' },
+                    { name: 'student_id', type: 'INT', isPK: false, isFK: true, desc: '學生外鍵 (FK)' },
+                    { name: 'club_id', type: 'INT', isPK: false, isFK: true, desc: '社團外鍵 (FK)' },
+                    { name: 'join_date', type: 'DATE', isPK: false, isFK: false, desc: '加入日期' }
+                ],
+                sampleRows: [
+                    { id: 1, student_id: 101, club_id: 10, join_date: '2026-09-10' },
+                    { id: 2, student_id: 101, club_id: 20, join_date: '2026-09-12' },
+                    { id: 3, student_id: 102, club_id: 20, join_date: '2026-09-15' }
+                ]
+            },
+            enrollment: {
+                key: 'enrollment',
+                title: '選課明細表 (Enrollment)',
+                type: 'junction',
+                bgColor: 'bg-teal-600',
+                borderColor: 'border-teal-400',
+                tagColor: 'bg-teal-500/20 text-teal-300',
+                desc: '⭐ 中間表 (Junction Table)：紀錄學生的選課與成績數據。',
+                columns: [
+                    { name: 'enrollment_id', type: 'INT', isPK: true, isFK: false, desc: '選課編號' },
+                    { name: 'student_id', type: 'INT', isPK: false, isFK: true, desc: '學生外鍵 (FK)' },
+                    { name: 'course_id', type: 'INT', isPK: false, isFK: true, desc: '課程外鍵 (FK)' },
+                    { name: 'score', type: 'INT', isPK: false, isFK: false, desc: '最終成績' }
+                ],
+                sampleRows: [
+                    { enrollment_id: 1, student_id: 101, course_id: 501, score: 95 },
+                    { enrollment_id: 2, student_id: 101, course_id: 502, score: 88 },
+                    { enrollment_id: 3, student_id: 102, course_id: 501, score: 90 }
+                ]
+            }
+        };
+
+        // Game Levels Configuration
+        const LEVELS = [
+            {
+                id: 1,
+                title: "關卡 1: 一對一 (1:1) 與 一對多 (1:N) 基礎",
+                taskDesc: "請放置「學生」、「學生證」、「教師」、「課程」，並正確建立 1:1 與 1:N 關聯！",
+                allowedEntities: ['student', 'idcard', 'teacher', 'course'],
+                hint: "💡 提示：<br>1. 「學生」與「學生證」是一對一 (1:1)。<br>2. 「教師」與「課程」是一對多 (1:N)，因為 1 位老師可以開設多門課程！",
+                takeaways: [
+                    "一對一 (1:1)：通常用於將私密數據或擴充屬性獨立拆分表。",
+                    "一對多 (1:N)：是最常見的關聯，Foreign Key (外鍵) 會放在「多(N)」的那一方！"
+                ],
+                checkSolution: () => {
+                    const has1to1 = state.connections.some(c => 
+                        c.type === '1:1' && 
+                        isConnBetween(c, 'student', 'idcard')
+                    );
+                    const has1toN = state.connections.some(c => 
+                        c.type === '1:N' && 
+                        isConnDirectional(c, 'teacher', 'course')
+                    );
+                    return {
+                        success: has1to1 && has1toN,
+                        msg: has1to1 && has1toN ? "恭喜你！成功掌握了 1:1 與 1:N 實體關係的連結！" : "尚未完成！請檢查是否正確連上了 [學生 1:1 學生證] 和 [教師 1:N 課程]。"
+                    };
+                }
+            },
+            {
+                id: 2,
+                title: "關卡 2: 破解 N:M (多對多) 數據危機",
+                taskDesc: "嘗試建立「學生」與「社團」的關聯。當發現 N:M 危機時，引入「社團成員紀錄」中間表進行拆解！",
+                allowedEntities: ['student', 'club', 'club_member'],
+                hint: "💡 提示：<br>1. 一個學生可以加入多個社團，一個社團也有多名學生，直接連 N:M 會造成數據混亂！<br>2. 請將「社團成員紀錄 (Club_Member)」中間表放到中央。<br>3. 建立：[學生 1 : N 社團成員紀錄] 以及 [社團 1 : N 社團成員紀錄]！",
+                takeaways: [
+                    "在關係型數據庫中，**絕對不能直接保留 N:M 關係**！",
+                    "為了解決 N:M，必須建立一個**中間表 (Junction Table / Bridge Table)**。",
+                    "中間表會包含雙方的 Primary Keys，轉化為兩個乾淨的 1:N 關係！"
+                ],
+                checkSolution: () => {
+                    // Check if they connected via Junction table
+                    const hasJunction1 = state.connections.some(c => 
+                        c.type === '1:N' && isConnDirectional(c, 'student', 'club_member')
+                    );
+                    const hasJunction2 = state.connections.some(c => 
+                        c.type === '1:N' && isConnDirectional(c, 'club', 'club_member')
+                    );
+                    
+                    // Direct NM check
+                    const hasDirectNM = state.connections.some(c => 
+                        c.type === 'N:M' && isConnBetween(c, 'student', 'club')
+                    );
+
+                    if (hasDirectNM) {
+                        return { success: false, msg: "警告：畫布上仍有「學生」與「社團」的直接 N:M 連線！請刪除該連線並使用「中間表」來拆解。" };
+                    }
+
+                    return {
+                        success: hasJunction1 && hasJunction2,
+                        msg: hasJunction1 && hasJunction2 ? "太優秀了！你成功使用中間表 (Junction Table) 將複雜的 N:M 拆解為兩個漂亮的 1:N 關係！" : "尚未完全拆解！請確定：[學生 1 : N 社團成員紀錄] 且 [社團 1 : N 社團成員紀錄]。"
+                    };
+                }
+            },
+            {
+                id: 3,
+                title: "關卡 3: 終極考驗——完整的學校選課數據庫",
+                taskDesc: "設計完整架構：學生、課程，以及紀錄成績的「選課明細表 (Enrollment)」中間表！",
+                allowedEntities: ['student', 'course', 'enrollment'],
+                hint: "💡 提示：<br>「學生」與「課程」也是多對多 (N:M) 關係。<br>請引入「選課明細表 (Enrollment)」，將其設計為：[學生 1 : N 選課明細表] 與 [課程 1 : N 選課明細表]。",
+                takeaways: [
+                    "選課明細表不僅記錄了誰選了什麼課，還能附加『分數 (score)』等關聯屬性！",
+                    "恭喜！你已經具備國高中乃至大學資料庫設計 (ERD & Normalization) 的核心概念！"
+                ],
+                checkSolution: () => {
+                    const c1 = state.connections.some(c => c.type === '1:N' && isConnDirectional(c, 'student', 'enrollment'));
+                    const c2 = state.connections.some(c => c.type === '1:N' && isConnDirectional(c, 'course', 'enrollment'));
+                    return {
+                        success: c1 && c2,
+                        msg: c1 && c2 ? "太強了！你已經完美通關所有數據庫實體關聯關卡！" : "請確認選課明細表 (Enrollment) 是否與學生及課程都正確建立了 1:N 關係。"
+                    };
+                }
+            }
+        ];
+
+        // Helper checks for connection verification
+        function isConnBetween(conn, keyA, keyB) {
+            const nodeA = state.nodes.find(n => n.id === conn.fromId);
+            const nodeB = state.nodes.find(n => n.id === conn.toId);
+            if (!nodeA || !nodeB) return false;
+            return (nodeA.entityKey === keyA && nodeB.entityKey === keyB) ||
+                   (nodeA.entityKey === keyB && nodeB.entityKey === keyA);
+        }
+
+        function isConnDirectional(conn, fromKey, toKey) {
+            const nodeFrom = state.nodes.find(n => n.id === conn.fromId);
+            const nodeTo = state.nodes.find(n => n.id === conn.toId);
+            if (!nodeFrom || !nodeTo) return false;
+            return nodeFrom.entityKey === fromKey && nodeTo.entityKey === toKey;
+        }
+
+        // DOM Elements References
+        const canvasContainer = document.getElementById('canvas-container');
+        const canvasNodes = document.getElementById('canvas-nodes');
+        const svgGroup = document.getElementById('connections-group');
+        const activeDragLine = document.getElementById('active-drag-line');
+        const entityPalette = document.getElementById('entity-palette');
+        const emptyHint = document.getElementById('empty-canvas-hint');
+        const nmCrisisPanel = document.getElementById('nm-crisis-panel');
+
+        // Modal Elements
+        const modalConnType = document.getElementById('modal-conn-type');
+        const modalSuccess = document.getElementById('modal-success');
+        const modalHint = document.getElementById('modal-hint');
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            initLevel(1);
+            setupCanvasEvents();
+            setupButtons();
+        });
+
+        // Initialize Level
+        function initLevel(lvlNum) {
+            state.currentLevel = lvlNum;
+            state.nodes = [];
+            state.connections = [];
+            state.selectedNodeId = null;
+            state.connectingFromNodeId = null;
+
+            const lvl = LEVELS[lvlNum - 1];
+            document.getElementById('level-badge').textContent = lvl.title;
+            document.getElementById('level-task-desc').textContent = lvl.taskDesc;
+
+            renderPalette();
+            renderCanvas();
+            updateInspector(null);
+            checkNMCrisis();
+        }
+
+        // Render Entity Cards Palette on Left Bar
+        function renderPalette() {
+            entityPalette.innerHTML = '';
+            const lvl = LEVELS[state.currentLevel - 1];
+
+            lvl.allowedEntities.forEach(entityKey => {
+                const entity = ENTITY_DICTIONARY[entityKey];
+                if (!entity) return;
+
+                const isAlreadyOnCanvas = state.nodes.some(n => n.entityKey === entityKey);
+
+                const cardBtn = document.createElement('div');
+                cardBtn.className = `p-3 rounded-xl border transition cursor-pointer flex items-center justify-between ${
+                    isAlreadyOnCanvas 
+                    ? 'bg-slate-800/40 border-slate-700/60 opacity-50 cursor-not-allowed' 
+                    : 'bg-slate-700/70 hover:bg-slate-700 border-slate-600 shadow-md hover:border-slate-500'
+                }`;
+
+                cardBtn.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-lg ${entity.bgColor} flex items-center justify-center text-white text-xs font-bold shrink-0 shadow">
+                            <i class="fa-solid ${entity.type === 'junction' ? 'fa-diagram-project' : 'fa-table'}"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-slate-100">${entity.title}</div>
+                            <div class="text-[10px] text-slate-400">${entity.columns.length} 個欄位 • ${entity.type === 'junction' ? '中間表' : '實體表'}</div>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-plus text-xs text-slate-400"></i>
+                `;
+
+                if (!isAlreadyOnCanvas) {
+                    cardBtn.addEventListener('click', () => spawnEntityNode(entityKey));
+                }
+
+                entityPalette.appendChild(cardBtn);
+            });
+        }
+
+        // Spawn Card onto Canvas
+        function spawnEntityNode(entityKey) {
+            const entity = ENTITY_DICTIONARY[entityKey];
+            if (!entity) return;
+
+            // Auto position offset
+            const count = state.nodes.length;
+            const x = 60 + (count % 3) * 240;
+            const y = 80 + Math.floor(count / 3) * 220;
+
+            const newNode = {
+                id: 'node_' + Date.now(),
+                entityKey: entityKey,
+                x: x,
+                y: y
+            };
+
+            state.nodes.push(newNode);
+            state.selectedNodeId = newNode.id;
+
+            renderPalette();
+            renderCanvas();
+            updateInspector(newNode);
+        }
+
+        // Render Canvas Nodes and Lines
+        function renderCanvas() {
+            // Toggle Empty Hint
+            if (state.nodes.length === 0) {
+                emptyHint.classList.remove('opacity-0');
+            } else {
+                emptyHint.classList.add('opacity-0');
+            }
+
+            // Render Nodes
+            canvasNodes.innerHTML = '';
+            state.nodes.forEach(node => {
+                const entity = ENTITY_DICTIONARY[node.entityKey];
+                const isSelected = state.selectedNodeId === node.id;
+                const isConnecting = state.connectingFromNodeId === node.id;
+
+                const nodeEl = document.createElement('div');
+                nodeEl.id = node.id;
+                nodeEl.className = `absolute pointer-events-auto w-56 bg-white rounded-2xl border-2 card-shadow transition-all duration-150 ${
+                    isSelected ? 'card-active border-blue-500 z-30' : 'border-slate-200 hover:border-slate-300 z-10'
+                } ${isConnecting ? 'ring-4 ring-blue-400/50' : ''}`;
+                
+                nodeEl.style.left = node.x + 'px';
+                nodeEl.style.top = node.y + 'px';
+
+                // Node Header HTML
+                nodeEl.innerHTML = `
+                    <div class="card-header ${entity.bgColor} text-white p-2.5 rounded-t-[14px] flex items-center justify-between cursor-move">
+                        <div class="flex items-center space-x-2 font-bold text-xs truncate">
+                            <i class="fa-solid ${entity.type === 'junction' ? 'fa-diagram-project text-amber-300' : 'fa-table'}"></i>
+                            <span class="truncate">${entity.title}</span>
+                        </div>
+                        <button class="btn-delete-node text-white/70 hover:text-white text-xs px-1" title="刪除卡片">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <!-- Column Badges -->
+                    <div class="p-2.5 space-y-1.5 text-[11px] bg-slate-50/50 rounded-b-[14px]">
+                        ${entity.columns.map(col => `
+                            <div class="flex items-center justify-between text-slate-600 bg-white px-2 py-1 rounded-md border border-slate-200/80">
+                                <span class="font-medium flex items-center gap-1">
+                                    ${col.isPK ? '<i class="fa-solid fa-key text-amber-500 text-[10px]" title="Primary Key"></i>' : ''}
+                                    ${col.isFK ? '<i class="fa-solid fa-key text-blue-500 text-[10px]" title="Foreign Key"></i>' : ''}
+                                    ${col.name}
+                                </span>
+                                <span class="text-[9px] font-mono bg-slate-100 text-slate-500 px-1 rounded">${col.type}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <!-- Interactive Connection Handles (Right/Left) -->
+                    <div class="btn-connect-handle absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center cursor-pointer shadow-md transition hover:scale-125 z-20" title="拉出連接線">
+                        <i class="fa-solid fa-circle-dot text-[10px]"></i>
+                    </div>
+                `;
+
+                // Event Listeners for Node
+                // Select Node
+                nodeEl.addEventListener('mousedown', (e) => {
+                    if (e.target.closest('.btn-delete-node') || e.target.closest('.btn-connect-handle')) return;
+                    state.selectedNodeId = node.id;
+                    state.draggedNodeId = node.id;
+                    state.dragOffset = {
+                        x: e.clientX - node.x,
+                        y: e.clientY - node.y
+                    };
+                    renderCanvas();
+                    updateInspector(node);
+                });
+
+                // Delete Node Button
+                const btnDelete = nodeEl.querySelector('.btn-delete-node');
+                btnDelete.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteNode(node.id);
+                });
+
+                // Connection Handle Click
+                const btnConnect = nodeEl.querySelector('.btn-connect-handle');
+                btnConnect.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    handleConnectHandleClick(node.id);
+                });
+
+                canvasNodes.appendChild(nodeEl);
+            });
+
+            renderLines();
+            checkNMCrisis();
+        }
+
+        // Delete Card Node
+        function deleteNode(nodeId) {
+            state.nodes = state.nodes.filter(n => n.id !== nodeId);
+            state.connections = state.connections.filter(c => c.fromId !== nodeId && c.toId !== nodeId);
+            if (state.selectedNodeId === nodeId) state.selectedNodeId = null;
+            renderPalette();
+            renderCanvas();
+            updateInspector(null);
+        }
+
+        // Handle Line Connection Start/End
+        function handleConnectHandleClick(nodeId) {
+            if (!state.connectingFromNodeId) {
+                // Start connecting
+                state.connectingFromNodeId = nodeId;
+                activeDragLine.classList.remove('hidden');
+            } else if (state.connectingFromNodeId === nodeId) {
+                // Cancel connecting
+                state.connectingFromNodeId = null;
+                activeDragLine.classList.add('hidden');
+            } else {
+                // Finish connecting -> Open Modal to select 1:1, 1:N, N:M
+                const fromNode = state.nodes.find(n => n.id === state.connectingFromNodeId);
+                const toNode = state.nodes.find(n => n.id === nodeId);
+
+                openConnTypeModal(fromNode, toNode);
+
+                state.connectingFromNodeId = null;
+                activeDragLine.classList.add('hidden');
+            }
+            renderCanvas();
+        }
+
+        // Open Cardinality Selector Modal
+        function openConnTypeModal(fromNode, toNode) {
+            const entityFrom = ENTITY_DICTIONARY[fromNode.entityKey];
+            const entityTo = ENTITY_DICTIONARY[toNode.entityKey];
+
+            document.getElementById('conn-from-name').textContent = entityFrom.title;
+            document.getElementById('conn-to-name').textContent = entityTo.title;
+
+            modalConnType.classList.remove('hidden');
+
+            // Store temporary pending connection target
+            state.pendingConn = { fromId: fromNode.id, toId: toNode.id };
+        }
+
+        // Add Connection
+        function addConnection(type) {
+            if (!state.pendingConn) return;
+
+            // Remove existing connection between these two if any
+            state.connections = state.connections.filter(c => 
+                !(c.fromId === state.pendingConn.fromId && c.toId === state.pendingConn.toId) &&
+                !(c.fromId === state.pendingConn.toId && c.toId === state.pendingConn.fromId)
+            );
+
+            state.connections.push({
+                id: 'conn_' + Date.now(),
+                fromId: state.pendingConn.fromId,
+                toId: state.pendingConn.toId,
+                type: type // '1:1', '1:N', 'N:M'
+            });
+
+            modalConnType.classList.add('hidden');
+            state.pendingConn = null;
+
+            renderCanvas();
+        }
+
+        // Render Connections SVG Lines
+        function renderLines() {
+            svgGroup.innerHTML = '';
+
+            state.connections.forEach(conn => {
+                const fromNode = state.nodes.find(n => n.id === conn.fromId);
+                const toNode = state.nodes.find(n => n.id === conn.toId);
+                if (!fromNode || !toNode) return;
+
+                // Calculate center coords
+                const x1 = fromNode.x + 224; // right handle edge
+                const y1 = fromNode.y + 40;
+                const x2 = toNode.x; // left edge
+                const y2 = toNode.y + 40;
+
+                // Draw Cubic Bezier Path
+                const dx = Math.abs(x2 - x1) / 2;
+                const pathD = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+
+                // Color based on relation
+                let strokeColor = '#3b82f6'; // blue for 1:1
+                let labelBg = 'bg-blue-600';
+                if (conn.type === '1:N') {
+                    strokeColor = '#f59e0b'; // amber
+                    labelBg = 'bg-amber-600';
+                } else if (conn.type === 'N:M') {
+                    strokeColor = '#e11d48'; // rose / warning
+                    labelBg = 'bg-rose-600';
+                }
+
+                // Path Element
+                const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                pathEl.setAttribute('d', pathD);
+                pathEl.setAttribute('fill', 'none');
+                pathEl.setAttribute('stroke', strokeColor);
+                pathEl.setAttribute('stroke-width', '3');
+                pathEl.setAttribute('class', 'pointer-events-auto cursor-pointer hover:stroke-width-4 transition');
+
+                // Click line to remove
+                pathEl.addEventListener('click', () => {
+                    state.connections = state.connections.filter(c => c.id !== conn.id);
+                    renderCanvas();
+                });
+
+                svgGroup.appendChild(pathEl);
+
+                // Add Relationship Label Badge in Middle
+                const midX = (x1 + x2) / 2;
+                const midY = (y1 + y2) / 2;
+
+                const foreignObject = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+                foreignObject.setAttribute('x', midX - 24);
+                foreignObject.setAttribute('y', midY - 14);
+                foreignObject.setAttribute('width', '48');
+                foreignObject.setAttribute('height', '28');
+
+                foreignObject.innerHTML = `
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="w-full h-full flex items-center justify-center">
+                        <span class="${labelBg} text-white font-bold text-[10px] px-2 py-0.5 rounded-full shadow-lg border border-white/20 select-none cursor-pointer">
+                            ${conn.type}
+                        </span>
+                    </div>
+                `;
+
+                svgGroup.appendChild(foreignObject);
+            });
+        }
+
+        // Canvas Drag & Mouse Event Handlers
+        function setupCanvasEvents() {
+            window.addEventListener('mousemove', (e) => {
+                // Dragging Node Card
+                if (state.draggedNodeId) {
+                    const node = state.nodes.find(n => n.id === state.draggedNodeId);
+                    if (node) {
+                        const rect = canvasContainer.getBoundingClientRect();
+                        node.x = Math.max(10, Math.min(rect.width - 240, e.clientX - rect.left - state.dragOffset.x));
+                        node.y = Math.max(10, Math.min(rect.height - 180, e.clientY - rect.top - state.dragOffset.y));
+                        renderCanvas();
+                    }
+                }
+
+                // Drawing Active Drag Line
+                if (state.connectingFromNodeId) {
+                    const fromNode = state.nodes.find(n => n.id === state.connectingFromNodeId);
+                    if (fromNode) {
+                        const rect = canvasContainer.getBoundingClientRect();
+                        const x1 = fromNode.x + 224;
+                        const y1 = fromNode.y + 40;
+                        const x2 = e.clientX - rect.left;
+                        const y2 = e.clientY - rect.top;
+
+                        const pathD = `M ${x1} ${y1} Q ${(x1+x2)/2} ${(y1+y2)/2 - 20}, ${x2} ${y2}`;
+                        activeDragLine.setAttribute('d', pathD);
+                    }
+                }
+            });
+
+            window.addEventListener('mouseup', () => {
+                state.draggedNodeId = null;
+            });
+        }
+
+        // Update Right Inspector Panel
+        function updateInspector(node) {
+            const placeholder = document.getElementById('inspector-placeholder');
+            const detail = document.getElementById('inspector-detail');
+            const tag = document.getElementById('selected-entity-tag');
+
+            if (!node) {
+                placeholder.classList.remove('hidden');
+                detail.classList.add('hidden');
+                tag.textContent = '未選擇卡片';
+                tag.className = 'text-[10px] bg-slate-700 text-slate-400 px-2 py-0.5 rounded-full';
+                return;
+            }
+
+            const entity = ENTITY_DICTIONARY[node.entityKey];
+            placeholder.classList.add('hidden');
+            detail.classList.remove('hidden');
+
+            tag.textContent = entity.title.split(' ')[0];
+            tag.className = `text-[10px] ${entity.tagColor} px-2 py-0.5 rounded-full font-bold`;
+
+            document.getElementById('inspector-title').textContent = entity.title;
+            document.getElementById('inspector-type').textContent = entity.type === 'junction' ? '⭐ 中間表 (Junction Table)' : '基本實體表 (Basic Table)';
+            document.getElementById('inspector-desc').textContent = entity.desc;
+
+            // Populate Column Table
+            const colsBody = document.getElementById('inspector-cols-body');
+            colsBody.innerHTML = entity.columns.map(col => `
+                <tr>
+                    <td class="p-2 font-medium font-mono text-blue-300">
+                        ${col.name}
+                        <div class="text-[9px] text-slate-400 font-sans">${col.desc}</div>
+                    </td>
+                    <td class="p-2 text-slate-400 font-mono text-[10px]">${col.type}</td>
+                    <td class="p-2">
+                        ${col.isPK ? '<span class="bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded text-[9px] font-bold">PK</span>' : ''}
+                        ${col.isFK ? '<span class="bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded text-[9px] font-bold">FK</span>' : ''}
+                        ${!col.isPK && !col.isFK ? '<span class="text-slate-600">-</span>' : ''}
+                    </td>
+                </tr>
+            `).join('');
+
+            // Populate Sample Rows
+            const rowsContainer = document.getElementById('inspector-rows-container');
+            const cols = entity.columns.map(c => c.name);
+
+            let tableHTML = `<table class="w-full text-left border-collapse"><thead><tr class="border-b border-slate-700 text-slate-400">`;
+            cols.forEach(c => tableHTML += `<th class="p-1">${c}</th>`);
+            tableHTML += `</tr></thead><tbody>`;
+
+            entity.sampleRows.forEach(row => {
+                tableHTML += `<tr class="border-b border-slate-800/50">`;
+                cols.forEach(c => tableHTML += `<td class="p-1 text-slate-300">${row[c] !== undefined ? row[c] : ''}</td>`);
+                tableHTML += `</tr>`;
+            });
+            tableHTML += `</tbody></table>`;
+
+            rowsContainer.innerHTML = tableHTML;
+        }
+
+        // Check if user created an N:M line -> Trigger Warning Panel
+        function checkNMCrisis() {
+            const hasNM = state.connections.some(c => c.type === 'N:M');
+            if (hasNM) {
+                nmCrisisPanel.classList.remove('hidden');
+            } else {
+                nmCrisisPanel.classList.add('hidden');
+            }
+        }
+
+        // Setup Modal and Toolbar Buttons
+        function setupButtons() {
+            // Modal Close Buttons
+            document.querySelectorAll('.btn-close-modal').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    modalConnType.classList.add('hidden');
+                    modalHint.classList.add('hidden');
+                    modalSuccess.classList.add('hidden');
+                });
+            });
+
+            // Cardinality Select Buttons in Connection Modal
+            document.querySelectorAll('.btn-select-cardinality').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const type = btn.getAttribute('data-type');
+                    addConnection(type);
+                });
+            });
+
+            // Reset Button
+            document.getElementById('btn-reset').addEventListener('click', () => {
+                initLevel(state.currentLevel);
+            });
+
+            // Tutorial / Hint Button
+            document.getElementById('btn-tutorial').addEventListener('click', () => {
+                const lvl = LEVELS[state.currentLevel - 1];
+                document.getElementById('hint-content').innerHTML = lvl.hint;
+                modalHint.classList.remove('hidden');
+            });
+
+            // Verify Database Solution Button
+            document.getElementById('btn-check').addEventListener('click', () => {
+                const lvl = LEVELS[state.currentLevel - 1];
+                const res = lvl.checkSolution();
+
+                if (res.success) {
+                    document.getElementById('success-message').textContent = res.msg;
+                    
+                    const pointsList = document.getElementById('success-points-list');
+                    pointsList.innerHTML = lvl.takeaways.map(t => `<li>${t}</li>`).join('');
+
+                    modalSuccess.classList.remove('hidden');
+                } else {
+                    // Show error in hint modal
+                    document.getElementById('hint-content').innerHTML = `
+                        <div class="text-rose-400 font-bold mb-2"><i class="fa-solid fa-circle-xmark"></i> 驗證未通過：</div>
+                        <p class="text-slate-200">${res.msg}</p>
+                    `;
+                    modalHint.classList.remove('hidden');
+                }
+            });
+
+            // Next Level Button
+            document.getElementById('btn-next-level').addEventListener('click', () => {
+                modalSuccess.classList.add('hidden');
+                if (state.currentLevel < LEVELS.length) {
+                    initLevel(state.currentLevel + 1);
+                } else {
+                    // All Completed!
+                    initLevel(1);
+                }
+            });
+
+            // Auto-fix N:M Button inside Warning Panel
+            document.getElementById('btn-auto-fix-nm').addEventListener('click', () => {
+                if (state.currentLevel === 2) {
+                    // Clear direct N:M line and automatically spawn Junction table
+                    state.connections = [];
+                    if (!state.nodes.some(n => n.entityKey === 'club_member')) {
+                        spawnEntityNode('club_member');
+                    }
+                    renderCanvas();
+                }
+            });
+        }
+    </script>
+</body>
+</html>
