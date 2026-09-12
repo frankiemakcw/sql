@@ -1,6 +1,6 @@
 /**
  * Shared Lesson 2 chrome: top task nav + left level sidebar with complete status.
- * Set body[data-task] to overview | schema | link | sql
+ * Set body[data-task] to overview | link | schema | sql
  * Set body[data-level] for schema/link pages: 1 | 2 | 3 | 4
  */
 (function () {
@@ -53,13 +53,13 @@
                     </div>
                     <div>
                         <h1 class="font-semibold text-lg leading-tight text-slate-700">Lesson 2</h1>
-                        <p class="text-sm text-slate-500 font-medium">Schemas, relationships, and SQL</p>
+                        <p class="text-sm text-slate-500 font-medium">Relationships, schemas, and SQL</p>
                     </div>
                 </div>
                 <nav class="ml-auto flex flex-wrap items-center gap-1.5 text-sm font-semibold">
                     <a href="index.html" class="${topClass(task === 'overview')}">Overview</a>
-                    <a href="column-easy.html" class="${topClass(task === 'schema')}">Task 1: Schema</a>
-                    <a href="link-1.html" class="${topClass(task === 'link')}">Task 2: Relationships</a>
+                    <a href="link-1.html" class="${topClass(task === 'link')}">Task 1: Relationships</a>
+                    <a href="column-easy.html" class="${topClass(task === 'schema')}">Task 2: Schema</a>
                     <a href="sql-functions.html" class="${topClass(task === 'sql')}">Task 3: SQL</a>
                 </nav>
             </div>`;
