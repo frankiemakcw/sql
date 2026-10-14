@@ -182,7 +182,7 @@
 
     function keyChipClass(active) {
         if (!active) return 'bg-indigo-50/50 text-slate-600 border-indigo-100 hover:bg-indigo-50';
-        return 'bg-amber-100 text-amber-800 border-amber-200';
+        return 'bg-indigo-700 text-white border-indigo-800';
     }
 
     function renderPool() {
@@ -218,28 +218,20 @@
                 const item = items[i];
                 if (item) {
                     slotsHTML += `
-                    <div draggable="true" ondragstart="handleDragStart(event, '${item.id}')" ondragend="handleDragEnd()" class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3 shadow-sm cursor-grab active:cursor-grabbing">
-                        <div class="flex items-center justify-between">
-                            <span class="font-mono font-bold text-sm text-slate-800 flex items-center gap-2">
-                                <span class="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200 font-sans font-semibold">Column ${i + 1}</span>
-                                <span class="text-indigo-900 text-sm sm:text-base font-bold">${item.name}</span>
-                            </span>
-                        </div>
-                        <div class="text-xs pt-0.5">
-                            <div>
-                                <label class="text-sm font-semibold text-slate-700 block mb-1 font-sans">Key role:</label>
-                                <button type="button" draggable="false" onmousedown="event.stopPropagation()" onclick="event.stopPropagation(); setKeyRole('${item.id}', '${table.id}', 'PK')"
-                                        class="px-4 py-1.5 rounded-lg text-sm font-semibold font-sans transition border cursor-pointer ${keyChipClass(item.selectedKey === 'PK')}">Primary Key</button>
-                            </div>
+                    <div draggable="true" ondragstart="handleDragStart(event, '${item.id}')" ondragend="handleDragEnd()" class="flex-1 min-w-0 bg-white border border-slate-200 rounded-xl p-3.5 flex flex-col gap-3 shadow-sm cursor-grab active:cursor-grabbing">
+                        <span class="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200 font-sans font-semibold w-fit">Column ${i + 1}</span>
+                        <span class="font-mono font-bold text-sm sm:text-base text-slate-800 break-all">${item.name}</span>
+                        <div class="mt-auto">
+                            <label class="text-sm font-semibold text-slate-700 block mb-1 font-sans">Key role:</label>
+                            <button type="button" draggable="false" onmousedown="event.stopPropagation()" onclick="event.stopPropagation(); setKeyRole('${item.id}', '${table.id}', 'PK')"
+                                    class="w-full px-3 py-1.5 rounded-lg text-sm font-semibold font-sans transition border cursor-pointer ${keyChipClass(item.selectedKey === 'PK')}">Primary Key</button>
                         </div>
                     </div>`;
                 } else {
                     slotsHTML += `
-                    <div class="border-2 border-dashed border-slate-200 hover:border-slate-300 bg-slate-50/70 rounded-xl p-3.5 flex items-center justify-between text-slate-400 transition min-h-[64px]">
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs bg-slate-200/80 text-slate-600 px-2 py-0.5 rounded font-mono font-medium">Column Slot ${i + 1}</span>
-                            <span class="text-xs sm:text-sm italic font-sans text-slate-500">Empty slot (drag or tap attribute here)</span>
-                        </div>
+                    <div class="flex-1 min-w-0 border-2 border-dashed border-slate-200 hover:border-slate-300 bg-slate-50/70 rounded-xl p-3.5 flex flex-col items-center justify-center gap-2 text-slate-400 transition min-h-[140px] text-center">
+                        <span class="text-xs bg-slate-200/80 text-slate-600 px-2 py-0.5 rounded font-mono font-medium">Column Slot ${i + 1}</span>
+                        <span class="text-xs sm:text-sm italic font-sans text-slate-500">Empty slot</span>
                         <i class="fa-regular fa-square-plus text-slate-400 text-base"></i>
                     </div>`;
                 }

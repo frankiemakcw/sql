@@ -64,10 +64,9 @@
         return 'not set';
     }
 
-    function sideClass(active, tone) {
+    function sideClass(active) {
         if (!active) return 'bg-indigo-50/50 text-slate-600 border-indigo-100 hover:bg-indigo-50';
-        if (tone === 'one') return 'bg-amber-100 text-amber-800 border-amber-200';
-        return 'bg-rose-100 text-rose-800 border-rose-200';
+        return 'bg-indigo-700 text-white border-indigo-800';
     }
 
     window.selectTable = function (id) {
@@ -127,7 +126,7 @@
             const selected = selectedId === table.id;
             return `
                 <button type="button" onclick="selectTable('${table.id}')"
-                    class="min-w-[160px] px-6 py-4 rounded-2xl border shadow-sm text-lg font-semibold font-mono transition ${selected ? 'border-indigo-300 bg-indigo-50 text-indigo-700 ring-2 ring-indigo-100' : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-200 hover:bg-indigo-50/50'}">
+                    class="min-w-[160px] px-6 py-4 rounded-2xl border shadow-sm text-lg font-semibold font-mono transition ${selected ? 'border-indigo-800 bg-indigo-700 text-white ring-2 ring-indigo-200' : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-200 hover:bg-indigo-50/50'}">
                     ${table.name}
                 </button>`;
         }).join('');
@@ -155,8 +154,8 @@
                     <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-3 space-y-2">
                         <p class="font-mono font-bold text-lg text-indigo-800">${tableName(conn.a)}</p>
                         <div class="flex gap-1.5">
-                            <button type="button" onclick="setSide(${index}, 'a', 'one')" class="flex-1 py-2 rounded-lg text-sm font-bold border transition ${sideClass(conn.aSide === 'one', 'one')}">One</button>
-                            <button type="button" onclick="setSide(${index}, 'a', 'many')" class="flex-1 py-2 rounded-lg text-sm font-bold border transition ${sideClass(conn.aSide === 'many', 'many')}">Many</button>
+                            <button type="button" onclick="setSide(${index}, 'a', 'one')" class="flex-1 py-2 rounded-lg text-sm font-bold border transition ${sideClass(conn.aSide === 'one')}">One</button>
+                            <button type="button" onclick="setSide(${index}, 'a', 'many')" class="flex-1 py-2 rounded-lg text-sm font-bold border transition ${sideClass(conn.aSide === 'many')}">Many</button>
                         </div>
                     </div>
                     <div class="hidden sm:flex items-center justify-center text-slate-300 text-lg">
@@ -165,8 +164,8 @@
                     <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-3 space-y-2">
                         <p class="font-mono font-bold text-lg text-indigo-800">${tableName(conn.b)}</p>
                         <div class="flex gap-1.5">
-                            <button type="button" onclick="setSide(${index}, 'b', 'one')" class="flex-1 py-2 rounded-lg text-sm font-bold border transition ${sideClass(conn.bSide === 'one', 'one')}">One</button>
-                            <button type="button" onclick="setSide(${index}, 'b', 'many')" class="flex-1 py-2 rounded-lg text-sm font-bold border transition ${sideClass(conn.bSide === 'many', 'many')}">Many</button>
+                            <button type="button" onclick="setSide(${index}, 'b', 'one')" class="flex-1 py-2 rounded-lg text-sm font-bold border transition ${sideClass(conn.bSide === 'one')}">One</button>
+                            <button type="button" onclick="setSide(${index}, 'b', 'many')" class="flex-1 py-2 rounded-lg text-sm font-bold border transition ${sideClass(conn.bSide === 'many')}">Many</button>
                         </div>
                     </div>
                 </div>

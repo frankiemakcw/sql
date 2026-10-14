@@ -179,11 +179,9 @@
         return 'no key';
     }
 
-    function keyChipClass(active, tone) {
+    function keyChipClass(active) {
         if (!active) return 'bg-indigo-50/50 text-slate-600 border-indigo-100 hover:bg-indigo-50';
-        if (tone === 'PK') return 'bg-amber-100 text-amber-800 border-amber-200';
-        if (tone === 'FK') return 'bg-rose-100 text-rose-800 border-rose-200';
-        return 'bg-indigo-50 text-indigo-700 border-indigo-100';
+        return 'bg-indigo-700 text-white border-indigo-800';
     }
 
     function renderPool() {
@@ -231,9 +229,9 @@
                                 <label class="text-sm font-semibold text-slate-700 block mb-1 font-sans">Key role:</label>
                                 <div class="flex items-center gap-1.5">
                                     <button type="button" draggable="false" onmousedown="event.stopPropagation()" onclick="event.stopPropagation(); setKeyRole('${item.id}', '${table.id}', 'PK')"
-                                            class="flex-1 py-1.5 rounded-lg text-sm font-semibold font-sans transition border cursor-pointer ${keyChipClass(item.selectedKey === 'PK', 'PK')}">Primary Key</button>
+                                            class="flex-1 py-1.5 rounded-lg text-sm font-semibold font-sans transition border cursor-pointer ${keyChipClass(item.selectedKey === 'PK')}">Primary Key</button>
                                     <button type="button" draggable="false" onmousedown="event.stopPropagation()" onclick="event.stopPropagation(); setKeyRole('${item.id}', '${table.id}', 'FK')"
-                                            class="flex-1 py-1.5 rounded-lg text-sm font-semibold font-sans transition border cursor-pointer ${keyChipClass(item.selectedKey === 'FK', 'FK')}">Foreign Key</button>
+                                            class="flex-1 py-1.5 rounded-lg text-sm font-semibold font-sans transition border cursor-pointer ${keyChipClass(item.selectedKey === 'FK')}">Foreign Key</button>
                                 </div>
                             </div>
                         </div>
